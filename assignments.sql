@@ -12,5 +12,17 @@ WHERE P.FullName != 'Data Conversion Only';
 
 -- 2. If the customer's primary contact person has the same phone number as the customer’s phone number, list the customer companies.
 SELECT C.CustomerName
-FROM Application.People P INNER JOIN Sales.Customers C
-	ON (P.PersonID = C.PrimaryContactPersonID) AND (P.PhoneNumber = C.PhoneNumber);
+FROM Application.People P 
+    INNER JOIN Sales.Customers C
+	    ON (P.PersonID = C.PrimaryContactPersonID) AND (P.PhoneNumber = C.PhoneNumber);
+
+-- 3. List of customers to whom we made a sale prior to 2016 but no sale since 2016-01-01.
+SELECT DISTINCT C.CustomerName
+FROM Sales.Customers C
+	INNER JOIN Sales.CustomerTransactions T
+	ON C.CustomerID = T.CustomerID
+WHERE T.TransactionDate < '2016-01-01' AND T.CustomerID NOT IN (
+	SELECT CustomerID
+	FROM Sales.CustomerTransactions
+	WHERE TransactionDate > '2016-01-01'
+);

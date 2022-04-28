@@ -9,3 +9,8 @@ FROM Application.People P
 	LEFT JOIN Purchasing.Suppliers S 
         ON (P.PersonID = S.PrimaryContactPersonID) OR (P.PersonID = S.AlternateContactPersonID)
 WHERE P.FullName != 'Data Conversion Only';
+
+-- 2. If the customer's primary contact person has the same phone number as the customer’s phone number, list the customer companies.
+SELECT C.CustomerName
+FROM Application.People P INNER JOIN Sales.Customers C
+	ON (P.PersonID = C.PrimaryContactPersonID) AND (P.PhoneNumber = C.PhoneNumber);

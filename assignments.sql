@@ -89,3 +89,18 @@ FROM Sales.Orders O
 	ON Ci.StateProvinceID = S.StateProvinceID
 GROUP BY S.StateProvinceName
 ORDER BY AvgProcessing DESC;
+
+-- 8. List of States and Avg dates for processing (confirmed delivery date – order date) by month.
+SELECT MONTH(O.OrderDate) AS MonthOrdered, S.StateProvinceName, 
+	AVG(DATEDIFF(DAY, O.OrderDate, I.ConfirmedDeliveryTime)) AS AvgProcessing
+FROM Sales.Orders O
+	INNER JOIN Sales.Invoices I
+	ON O.OrderID = I.OrderID
+	INNER JOIN Sales.Customers Cu
+	ON I.CustomerID = Cu.CustomerID
+	INNER JOIN Application.Cities Ci
+	ON Cu.DeliveryCityID = Ci.CityID
+	INNER JOIN Application.StateProvinces S
+	ON Ci.StateProvinceID = S.StateProvinceID
+GROUP BY MONTH(O.OrderDate), S.StateProvinceName
+ORDER BY MonthOrdered ASC, AvgProcessing DESC;

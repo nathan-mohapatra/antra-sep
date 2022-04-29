@@ -33,7 +33,8 @@ FROM Purchasing.PurchaseOrderLines P
 	INNER JOIN Warehouse.StockItems S
 	ON P.StockItemID = S.StockItemID
 WHERE YEAR(P.LastReceiptDate) = '2013'
-GROUP BY S.StockItemName;
+GROUP BY S.StockItemName
+ORDER BY TotalQuantity DESC;
 
 -- 5. List of stock items that have at least 10 characters in description.
 SELECT S.StockItemName
@@ -73,3 +74,18 @@ FROM cte_TransactionState CTE
 	ON I.StockItemID = S.StockItemID
 WHERE YEAR(CTE.TransactionDate) = '2014'
 	AND CTE.StateProvinceName NOT IN ('Alabama', 'Georgia');
+
+-- 7. List of States and Avg dates for processing (confirmed delivery date – order date).
+SELECT S.StateProvinceName, 
+	AVG(DATEDIFF(DAY, O.OrderDate, I.ConfirmedDeliveryTime)) AS AvgProcessing
+FROM Sales.Orders O
+	INNER JOIN Sales.Invoices I
+	ON O.OrderID = I.OrderID
+	INNER JOIN Sales.Customers Cu
+	ON I.CustomerID = Cu.CustomerID
+	RIGHT JOIN Application.Cities Ci
+	ON Cu.DeliveryCityID = Ci.CityID
+	INNER JOIN Application.StateProvinces S
+	ON Ci.StateProvinceID = S.StateProvinceID
+GROUP BY S.StateProvinceName
+ORDER BY AvgProcessing DESC;

@@ -5,16 +5,16 @@ SELECT P.FullName, P.PhoneNumber AS PersonalPhone, P.FaxNumber AS PersonalFax,
 	COALESCE(C.PhoneNumber, S.PhoneNumber) AS CompanyPhone, COALESCE(C.FaxNumber, S.FaxNumber) AS CompanyFax
 FROM Application.People P
 	LEFT JOIN Sales.Customers C 
-        ON (P.PersonID = C.PrimaryContactPersonID) OR (P.PersonID = C.AlternateContactPersonID)
+    ON (P.PersonID = C.PrimaryContactPersonID) OR (P.PersonID = C.AlternateContactPersonID)
 	LEFT JOIN Purchasing.Suppliers S 
-        ON (P.PersonID = S.PrimaryContactPersonID) OR (P.PersonID = S.AlternateContactPersonID)
+    ON (P.PersonID = S.PrimaryContactPersonID) OR (P.PersonID = S.AlternateContactPersonID)
 WHERE P.FullName != 'Data Conversion Only';
 
 -- 2. If the customer's primary contact person has the same phone number as the customer’s phone number, list the customer companies.
 SELECT C.CustomerName
 FROM Application.People P 
     INNER JOIN Sales.Customers C
-	    ON (P.PersonID = C.PrimaryContactPersonID) AND (P.PhoneNumber = C.PhoneNumber);
+    ON (P.PersonID = C.PrimaryContactPersonID) AND (P.PhoneNumber = C.PhoneNumber);
 
 -- 3. List of customers to whom we made a sale prior to 2016 but no sale since 2016-01-01.
 SELECT DISTINCT C.CustomerName
@@ -26,3 +26,10 @@ WHERE T.TransactionDate < '2016-01-01' AND T.CustomerID NOT IN (
 	FROM Sales.CustomerTransactions
 	WHERE TransactionDate > '2016-01-01'
 );
+
+-- 4. List of Stock Items and total quantity for each stock item in Purchase Orders in Year 2013.
+SELECT S.StockItemName, P.OrderedOuters AS TotalQuantity
+FROM Purchasing.PurchaseOrderLines P
+	INNER JOIN Warehouse.StockItems S
+	ON P.StockItemID = S.StockItemID
+WHERE YEAR(P.LastReceiptDate) = '2013';

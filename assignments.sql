@@ -28,21 +28,24 @@ WHERE T.TransactionDate < '2016-01-01' AND T.CustomerID NOT IN (
 );
 
 -- 4. List of Stock Items and total quantity for each stock item in Purchase Orders in Year 2013.
-SELECT S.StockItemName, P.OrderedOuters AS TotalQuantity
+SELECT S.StockItemName, SUM(P.OrderedOuters) AS TotalQuantity
 FROM Purchasing.PurchaseOrderLines P
 	INNER JOIN Warehouse.StockItems S
 	ON P.StockItemID = S.StockItemID
-WHERE YEAR(P.LastReceiptDate) = '2013';
+WHERE YEAR(P.LastReceiptDate) = '2013'
+GROUP BY S.StockItemName;
 
 -- 5. List of stock items that have at least 10 characters in description.
-SELECT DISTINCT S.StockItemName
+SELECT S.StockItemName
 FROM Purchasing.PurchaseOrderLines P
 	INNER JOIN Warehouse.StockItems S
 	ON P.StockItemID = S.StockItemID
 WHERE LEN(P.Description) > 9
 UNION
-SELECT DISTINCT S.StockItemName
+SELECT S.StockItemName
 FROM Sales.OrderLines O
 	INNER JOIN Warehouse.StockItems S
 	ON O.StockItemID = S.StockItemID
 WHERE LEN(O.Description) > 9;
+
+-- 6. List of stock items that are not sold to the state of Alabama and Georgia in 2014.

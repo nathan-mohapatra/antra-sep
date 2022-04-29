@@ -43,6 +43,12 @@ FROM Purchasing.PurchaseOrderLines P
 WHERE LEN(P.Description) > 9
 UNION
 SELECT S.StockItemName
+FROM Sales.InvoiceLines I
+	INNER JOIN Warehouse.StockItems S
+	ON I.StockItemID = S.StockItemID
+WHERE LEN(I.Description) > 9
+UNION
+SELECT S.StockItemName
 FROM Sales.OrderLines O
 	INNER JOIN Warehouse.StockItems S
 	ON O.StockItemID = S.StockItemID

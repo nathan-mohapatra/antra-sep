@@ -49,3 +49,21 @@ FROM Sales.OrderLines O
 WHERE LEN(O.Description) > 9;
 
 -- 6. List of stock items that are not sold to the state of Alabama and Georgia in 2014.
+WITH cte_TransactionState AS (
+	SELECT T.InvoiceID, T.TransactionDate, S.StateProvinceName
+	FROM Sales.CustomerTransactions T
+		LEFT JOIN Sales.Customers Cu
+		ON T.CustomerID = Cu.CustomerID
+		LEFT JOIN Application.Cities Ci
+		ON Cu.DeliveryCityID = Ci.CityID
+		LEFT JOIN Application.StateProvinces S
+		ON Ci.StateProvinceID = S.StateProvinceID
+)
+SELECT DISTINCT S.StockItemName
+FROM cte_TransactionState CTE
+	INNER JOIN Sales.InvoiceLines I
+	ON CTE.InvoiceID = I.InvoiceID
+	INNER JOIN Warehouse.StockItems S
+	ON I.StockItemID = S.StockItemID
+WHERE YEAR(CTE.TransactionDate) = '2014'
+	AND CTE.StateProvinceName NOT IN ('Alabama', 'Georgia');

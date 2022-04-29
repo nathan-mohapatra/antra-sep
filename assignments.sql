@@ -39,4 +39,10 @@ SELECT DISTINCT S.StockItemName
 FROM Purchasing.PurchaseOrderLines P
 	INNER JOIN Warehouse.StockItems S
 	ON P.StockItemID = S.StockItemID
-WHERE LEN(P.Description) > 9;
+WHERE LEN(P.Description) > 9
+UNION
+SELECT DISTINCT S.StockItemName
+FROM Sales.OrderLines O
+	INNER JOIN Warehouse.StockItems S
+	ON O.StockItemID = S.StockItemID
+WHERE LEN(O.Description) > 9;

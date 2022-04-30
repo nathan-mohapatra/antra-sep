@@ -134,3 +134,22 @@ FROM cte_PurchasedSold CTE
 	ON CTE.StockItemID = S.StockItemID
 GROUP BY S.StockItemName
 HAVING SUM(CTE.OrderedOuters) > SUM(CTE.Quantity);
+
+-- 10. List of Customers and their phone number, together with the primary contact person’s name, to whom we did not sell more than 10 mugs (search by name) in the year 2016.
+WITH cte_RelevantCustomers AS (
+	SELECT C.CustomerID
+	FROM Sales.CustomerTransactions C
+		INNER JOIN Sales.InvoiceLines I
+		ON C.InvoiceID = I.InvoiceID
+		INNER JOIN Warehouse.StockItems S
+		ON I.StockItemID = S.StockItemID
+	WHERE YEAR(C.TransactionDate) = '2016' AND S.StockItemName LIKE N'%mug%'
+	GROUP BY C.CustomerID
+	HAVING SUM(I.Quantity) < 11
+)
+SELECT C.CustomerName, C.PhoneNumber, P.FullName AS PrimaryContact
+FROM cte_RelevantCustomers CTE
+	INNER JOIN Sales.Customers C
+	ON CTE.CustomerID = C.CustomerID
+	INNER JOIN Application.People P
+	ON C.PrimaryContactPersonID = P.PersonID;

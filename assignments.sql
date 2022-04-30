@@ -98,9 +98,39 @@ FROM Sales.Orders O
 	ON O.OrderID = I.OrderID
 	INNER JOIN Sales.Customers Cu
 	ON I.CustomerID = Cu.CustomerID
-	INNER JOIN Application.Cities Ci
+	RIGHT JOIN Application.Cities Ci
 	ON Cu.DeliveryCityID = Ci.CityID
 	INNER JOIN Application.StateProvinces S
 	ON Ci.StateProvinceID = S.StateProvinceID
 GROUP BY MONTH(O.OrderDate), S.StateProvinceName
 ORDER BY MonthOrdered ASC, AvgProcessing DESC;
+
+-- 9. List of StockItems that the company purchased more than sold in the year of 2015.
+WITH cte_PurchasedSold AS (
+	SELECT OrderedOuters, Quantity, StockItemID
+	FROM (
+		SELECT P.OrderedOuters, Si.StockItemID
+		FROM Purchasing.SupplierTransactions St
+			INNER JOIN Purchasing.PurchaseOrderLines P
+			ON St.PurchaseOrderID = P.PurchaseOrderID
+			INNER JOIN Warehouse.StockItems Si
+			ON P.StockItemID = Si.StockItemID
+		WHERE YEAR(St.TransactionDate) = '2015'
+	) sub_Purchased
+	INNER JOIN (
+		SELECT I.Quantity, S.StockItemID AS SID
+		FROM Sales.CustomerTransactions C
+			INNER JOIN Sales.InvoiceLines I
+			ON C.InvoiceID = I.InvoiceID
+			INNER JOIN Warehouse.StockItems S
+			ON I.StockItemID = S.StockItemID
+		WHERE YEAR(C.TransactionDate) = '2015'
+	) sub_Sold
+	ON sub_Purchased.StockItemID = sub_Sold.SID
+)
+SELECT S.StockItemName
+FROM cte_PurchasedSold CTE
+	INNER JOIN Warehouse.StockItems S
+	ON CTE.StockItemID = S.StockItemID
+GROUP BY S.StockItemName
+HAVING SUM(CTE.OrderedOuters) > SUM(CTE.Quantity);

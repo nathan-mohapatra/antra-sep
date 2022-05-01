@@ -1,8 +1,10 @@
 USE WideWorldImporters;
 
--- 1. List of Persons’ full name, all their fax and phone numbers, as well as the phone number and fax of the company they are working for (if any).
+-- 1. List of Persons’ full name, all their fax and phone numbers, as well as the phone number and 
+-- fax of the company they are working for (if any).
 SELECT P.FullName, P.PhoneNumber AS PersonalPhone, P.FaxNumber AS PersonalFax, 
-	COALESCE(C.PhoneNumber, S.PhoneNumber) AS CompanyPhone, COALESCE(C.FaxNumber, S.FaxNumber) AS CompanyFax
+	COALESCE(C.PhoneNumber, S.PhoneNumber) AS CompanyPhone, 
+    COALESCE(C.FaxNumber, S.FaxNumber) AS CompanyFax
 FROM Application.People P
 	LEFT JOIN Sales.Customers C 
 	ON (P.PersonID = C.PrimaryContactPersonID) OR (P.PersonID = C.AlternateContactPersonID)
@@ -10,7 +12,8 @@ FROM Application.People P
 	ON (P.PersonID = S.PrimaryContactPersonID) OR (P.PersonID = S.AlternateContactPersonID)
 WHERE P.FullName != 'Data Conversion Only';
 
--- 2. If the customer's primary contact person has the same phone number as the customer’s phone number, list the customer companies.
+-- 2. If the customer's primary contact person has the same phone number as the customer’s phone 
+-- number, list the customer companies.
 SELECT C.CustomerName
 FROM Application.People P 
 	INNER JOIN Sales.Customers C
@@ -135,7 +138,8 @@ FROM cte_PurchasedSold CTE
 GROUP BY S.StockItemName
 HAVING SUM(CTE.OrderedOuters) > SUM(CTE.Quantity);
 
--- 10. List of Customers and their phone number, together with the primary contact person’s name, to whom we did not sell more than 10 mugs (search by name) in the year 2016.
+-- 10. List of Customers and their phone number, together with the primary contact person’s name, to 
+-- whom we did not sell more than 10 mugs (search by name) in the year 2016.
 WITH cte_RelevantCustomers AS (
 	SELECT C.CustomerID
 	FROM Sales.CustomerTransactions C
@@ -153,3 +157,10 @@ FROM cte_RelevantCustomers CTE
 	ON CTE.CustomerID = C.CustomerID
 	INNER JOIN Application.People P
 	ON C.PrimaryContactPersonID = P.PersonID;
+
+-- 11. List all the cities that were updated after 2015-01-01.
+SELECT C.CityName, S.StateProvinceName
+FROM Application.Cities C
+	INNER JOIN Application.StateProvinces S
+	ON C.StateProvinceID = S.StateProvinceID
+WHERE C.ValidFrom > '2015-01-01';

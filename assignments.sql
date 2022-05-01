@@ -164,3 +164,31 @@ FROM Application.Cities C
 	INNER JOIN Application.StateProvinces S
 	ON C.StateProvinceID = S.StateProvinceID
 WHERE C.ValidFrom > '2015-01-01';
+
+-- 12. List all the Order Detail (Stock Item name, delivery address, delivery state, city, country, 
+-- customer name, customer contact person name, customer phone, quantity) for the date of 2014-07-01. 
+-- Info should be relevant to that date.
+WITH cte_CustomerDetails AS (
+	SELECT Cu.DeliveryAddressLine2 + ', ' + Ci.CityName + ', ' + S.StateProvinceCode + ' ' + Cu.DeliveryPostalCode AS DeliveryAddress,
+		Ci.CityName AS DeliveryCity, S.StateProvinceName AS DeliveryState, Co.CountryName AS DeliveryCountry,
+		Cu.CustomerName, P.FullName AS ContactName, Cu.PhoneNumber, InvoiceID
+	FROM Sales.CustomerTransactions Ct
+		LEFT JOIN Sales.Customers Cu
+		ON Ct.CustomerID = Cu.CustomerID
+		INNER JOIN Application.Cities Ci
+		ON Cu.DeliveryCityID = Ci.CityID
+		INNER JOIN Application.StateProvinces S
+		ON Ci.StateProvinceID = S.StateProvinceID
+		INNER JOIN Application.Countries Co
+		ON S.CountryID = Co.CountryID
+		INNER JOIN Application.People P
+		ON Cu.PrimaryContactPersonID = P.PersonID
+	WHERE Ct.TransactionDate = '2014-07-01'
+)
+SELECT S.StockItemName, CTE.DeliveryAddress, CTE.DeliveryCity, CTE.DeliveryState, CTE.DeliveryCountry,
+	CTE.CustomerName, CTE.ContactName, CTE.PhoneNumber, I.Quantity
+FROM cte_CustomerDetails CTE
+	INNER JOIN Sales.InvoiceLines I
+	ON CTE.InvoiceID = I.InvoiceID
+	INNER JOIN Warehouse.StockItems S
+	ON I.StockItemID = S.StockItemID;

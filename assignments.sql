@@ -290,12 +290,10 @@ ORDER BY TotalQuantity DESC;
 
 -- 18. Create a view that shows the total quantity of stock items of each stock group sold (in orders) 
 -- by year 2013-2017. [Stock Group Name, 2013, 2014, 2015, 2016, 2017]
--- 18. Create a view that shows the total quantity of stock items of each stock group sold (in orders) 
--- by year 2013-2017. [Stock Group Name, 2013, 2014, 2015, 2016, 2017]
-IF OBJECT_ID('Sales.vStockItemGroupSales', 'view') IS NOT NULL
-	DROP VIEW Sales.vStockItemGroupSales;
+IF OBJECT_ID('Sales.vStockItemGroupSales1', 'view') IS NOT NULL
+	DROP VIEW Sales.vStockItemGroupSales1;
 GO
-CREATE VIEW Sales.vStockItemGroupSales
+CREATE VIEW Sales.vStockItemGroupSales1
 	WITH SCHEMABINDING
 	AS
 		SELECT StockGroupName,
@@ -318,4 +316,36 @@ CREATE VIEW Sales.vStockItemGroupSales
 		PIVOT (
 			SUM(TotalQuantity)
 			FOR TransactionYear IN ([2013], [2014], [2015], [2016], [2017])
+		) PivotTable;
+GO
+-- 19. Create a view that shows the total quantity of stock items of each stock group sold (in orders) 
+-- by year 2013-2017. [Year, Stock Group Name1, Stock Group Name2, Stock Group Name3, …, Stock Group Name10]
+IF OBJECT_ID('Sales.vStockItemGroupSales2', 'view') IS NOT NULL
+	DROP VIEW Sales.vStockItemGroupSales2;
+GO
+CREATE VIEW Sales.vStockItemGroupSales2
+	WITH SCHEMABINDING
+	AS
+		SELECT TransactionYear,
+			[Clothing], [Computing Novelties], [Furry Footwear],  [Mugs], [Novelty Items], 
+			[Packaging Materials], [Toys], [T-Shirts], [USB Novelties]
+		FROM (
+			SELECT YEAR(C.TransactionDate) AS TransactionYear, Sg.StockGroupName, 
+			SUM(I.Quantity) AS TotalQuantity
+			FROM Sales.CustomerTransactions C
+				INNER JOIN Sales.InvoiceLines I
+				ON C.InvoiceID = I.InvoiceID
+				INNER JOIN Warehouse.StockItems S
+				ON I.StockItemID = S.StockItemID
+				INNER JOIN Warehouse.StockItemStockGroups Si
+				ON S.StockItemID = Si.StockItemID
+				INNER JOIN Warehouse.StockGroups Sg
+				ON Si.StockGroupID = Sg.StockGroupID
+			WHERE YEAR(C.TransactionDate) BETWEEN '2013' AND '2017'
+			GROUP BY YEAR(C.TransactionDate), Sg.StockGroupName
+		) SourceTable
+		PIVOT (
+			SUM(TotalQuantity)
+			FOR StockGroupName IN ([Clothing], [Computing Novelties], [Furry Footwear],  [Mugs], [Novelty Items], 
+				[Packaging Materials], [Toys], [T-Shirts], [USB Novelties])
 		) PivotTable;

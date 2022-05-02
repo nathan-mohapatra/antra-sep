@@ -270,3 +270,8 @@ FROM Sales.Invoices I
 	INNER JOIN Sales.Orders O
 	ON I.OrderID = O.OrderID
 WHERE JSON_QUERY(I.ReturnedDeliveryData, '$."Events"') LIKE N'%DeliveryAttempt%DeliveryAttempt%';
+
+-- 16. List all stock items that are manufactured in China. (Country of Manufacture)
+SELECT DISTINCT StockItemName
+FROM Warehouse.StockItems
+WHERE JSON_VALUE(CustomFields, '$."CountryOfManufacture"') = 'China';

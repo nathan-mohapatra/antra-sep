@@ -106,6 +106,7 @@ FROM Sales.Orders O
 	INNER JOIN Application.StateProvinces S
 	ON Ci.StateProvinceID = S.StateProvinceID
 GROUP BY MONTH(O.OrderDate), S.StateProvinceName
+HAVING MONTH(O.OrderDate) IS NOT NULL
 ORDER BY MonthOrdered ASC, AvgProcessing DESC;
 
 -- 9. List of StockItems that the company purchased more than sold in the year of 2015.
@@ -218,10 +219,47 @@ WITH cte_PurchasedSold AS (
 SELECT Sg.StockGroupName, 
 	SUM(CAST(CTE.OrderedOuters AS BIGINT)) AS TotalPurchased, 
 	SUM(CAST(CTE.Quantity AS BIGINT)) AS TotalSold,
-	SUM(CAST(CTE.OrderedOuters AS BIGINT)) - SUM(CAST(CTE.Quantity AS BIGINT)) AS Remaining
+	SUM(CAST(CTE.OrderedOuters - CTE.Quantity AS BIGINT)) AS Remaining
 FROM cte_PurchasedSold CTE
 	INNER JOIN Warehouse.StockItemStockGroups Si
 	ON CTE.StockItemID = Si.StockItemID
 	INNER JOIN Warehouse.StockGroups Sg
 	ON Si.StockGroupID = Sg.StockGroupID
 GROUP BY Sg.StockGroupName;
+
+-- 14. List of Cities in the US and the stock item that the city got the most deliveries in 2016. 
+-- If the city did not purchase any stock items in 2016, print “No Sales”.
+WITH cte_StockItemCities AS (
+	SELECT Ci.CityName + ', ' + Sp.StateProvinceCode AS City, 
+		Si.StockItemID, COUNT(Si.StockItemID) AS StockItemCount
+	FROM Warehouse.StockItemTransactions Si
+		INNER JOIN Sales.Customers Cu
+		ON Si.CustomerID = Cu.CustomerID
+		RIGHT JOIN Application.Cities Ci
+		ON Cu.DeliveryCityID = Ci.CityID
+		INNER JOIN Application.StateProvinces Sp
+		ON Ci.StateProvinceID = Sp.StateProvinceID
+	WHERE YEAR(Si.TransactionOccurredWhen) = '2016' AND Sp.CountryID = 230
+	GROUP BY Ci.CityName + ', ' + Sp.StateProvinceCode, Si.StockItemID
+	UNION
+	SELECT Ci.CityName + ', ' + Sp.StateProvinceCode AS City, 
+		Si.StockItemID, COUNT(Si.StockItemID) AS StockItemCount
+	FROM Warehouse.StockItemTransactions Si
+		INNER JOIN Purchasing.Suppliers Su
+		ON Si.SupplierID = Su.SupplierID
+		RIGHT JOIN Application.Cities Ci
+		ON Su.DeliveryCityID = Ci.CityID
+		INNER JOIN Application.StateProvinces Sp
+		ON Ci.StateProvinceID = Sp.StateProvinceID
+	WHERE YEAR(Si.TransactionOccurredWhen) = '2016' AND Sp.CountryID = 230
+	GROUP BY Ci.CityName + ', ' + Sp.StateProvinceCode, Si.StockItemID
+)
+SELECT sub_Ranked.City, COALESCE(S.StockItemName, 'No Sales') AS MostDelivered
+FROM (
+	SELECT *,
+		DENSE_RANK() OVER (PARTITION BY City ORDER BY StockItemCount DESC) Ranking
+	FROM cte_StockItemCities
+) sub_Ranked
+	LEFT JOIN Warehouse.StockItems S
+	ON sub_Ranked.StockItemID = S.StockItemID
+WHERE sub_Ranked.Ranking = 1

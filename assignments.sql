@@ -4,7 +4,7 @@ USE WideWorldImporters;
 -- fax of the company they are working for (if any).
 SELECT P.FullName, P.PhoneNumber AS PersonalPhone, P.FaxNumber AS PersonalFax, 
 	COALESCE(C.PhoneNumber, S.PhoneNumber) AS CompanyPhone, 
-    COALESCE(C.FaxNumber, S.FaxNumber) AS CompanyFax
+	COALESCE(C.FaxNumber, S.FaxNumber) AS CompanyFax
 FROM Application.People P
 	LEFT JOIN Sales.Customers C 
 	ON (P.PersonID = C.PrimaryContactPersonID) OR (P.PersonID = C.AlternateContactPersonID)
@@ -171,7 +171,7 @@ WHERE C.ValidFrom > '2015-01-01';
 WITH cte_CustomerDetails AS (
 	SELECT Cu.DeliveryAddressLine2 + ', ' + Ci.CityName + ', ' + S.StateProvinceCode + ' ' + Cu.DeliveryPostalCode AS DeliveryAddress,
 		Ci.CityName AS DeliveryCity, S.StateProvinceName AS DeliveryState, Co.CountryName AS DeliveryCountry,
-		Cu.CustomerName, P.FullName AS ContactName, Cu.PhoneNumber, InvoiceID
+		Cu.CustomerName, P.FullName AS ContactName, Cu.PhoneNumber, Ct.InvoiceID
 	FROM Sales.CustomerTransactions Ct
 		LEFT JOIN Sales.Customers Cu
 		ON Ct.CustomerID = Cu.CustomerID
@@ -192,3 +192,36 @@ FROM cte_CustomerDetails CTE
 	ON CTE.InvoiceID = I.InvoiceID
 	INNER JOIN Warehouse.StockItems S
 	ON I.StockItemID = S.StockItemID;
+
+-- 13. List of stock item groups and total quantity purchased, total quantity sold, and the remaining 
+-- stock quantity (quantity purchased – quantity sold)
+WITH cte_PurchasedSold AS (
+	SELECT OrderedOuters, Quantity, StockItemID
+	FROM (
+		SELECT P.OrderedOuters, Si.StockItemID
+		FROM Purchasing.SupplierTransactions St
+			INNER JOIN Purchasing.PurchaseOrderLines P
+			ON St.PurchaseOrderID = P.PurchaseOrderID
+			INNER JOIN Warehouse.StockItems Si
+			ON P.StockItemID = Si.StockItemID
+	) sub_Purchased
+	INNER JOIN (
+		SELECT I.Quantity, S.StockItemID AS SID
+		FROM Sales.CustomerTransactions C
+			INNER JOIN Sales.InvoiceLines I
+			ON C.InvoiceID = I.InvoiceID
+			INNER JOIN Warehouse.StockItems S
+			ON I.StockItemID = S.StockItemID
+	) sub_Sold
+	ON sub_Purchased.StockItemID = sub_Sold.SID
+)
+SELECT Sg.StockGroupName, 
+	SUM(CAST(CTE.OrderedOuters AS BIGINT)) AS TotalPurchased, 
+	SUM(CAST(CTE.Quantity AS BIGINT)) AS TotalSold,
+	SUM(CAST(CTE.OrderedOuters AS BIGINT)) - SUM(CAST(CTE.Quantity AS BIGINT)) AS Remaining
+FROM cte_PurchasedSold CTE
+	INNER JOIN Warehouse.StockItemStockGroups Si
+	ON CTE.StockItemID = Si.StockItemID
+	INNER JOIN Warehouse.StockGroups Sg
+	ON Si.StockGroupID = Sg.StockGroupID
+GROUP BY Sg.StockGroupName;

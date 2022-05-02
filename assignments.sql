@@ -275,3 +275,15 @@ WHERE JSON_QUERY(I.ReturnedDeliveryData, '$."Events"') LIKE N'%DeliveryAttempt%D
 SELECT DISTINCT StockItemName
 FROM Warehouse.StockItems
 WHERE JSON_VALUE(CustomFields, '$."CountryOfManufacture"') = 'China';
+
+-- 17. Total quantity of stock items sold in 2015, group by country of manufacturing.
+SELECT JSON_VALUE(S.CustomFields, '$."CountryOfManufacture"') AS CountryOfManufacture,
+	SUM(I.Quantity) AS TotalQuantity
+FROM Sales.CustomerTransactions C
+	INNER JOIN Sales.InvoiceLines I
+	ON C.InvoiceID = I.InvoiceID
+	INNER JOIN Warehouse.StockItems S
+	ON I.StockItemID = S.StockItemID
+WHERE YEAR(C.TransactionDate) = '2015'
+GROUP BY JSON_VALUE(S.CustomFields, '$."CountryOfManufacture"')
+ORDER BY TotalQuantity DESC;

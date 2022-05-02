@@ -263,3 +263,10 @@ FROM (
 	LEFT JOIN Warehouse.StockItems S
 	ON sub_Ranked.StockItemID = S.StockItemID
 WHERE sub_Ranked.Ranking = 1
+
+-- 15. List any orders that had more than one delivery attempt (located in invoice table).
+SELECT O.*
+FROM Sales.Invoices I
+	INNER JOIN Sales.Orders O
+	ON I.OrderID = O.OrderID
+WHERE JSON_QUERY(I.ReturnedDeliveryData, '$."Events"') LIKE N'%DeliveryAttempt%DeliveryAttempt%';

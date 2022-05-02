@@ -287,3 +287,35 @@ FROM Sales.CustomerTransactions C
 WHERE YEAR(C.TransactionDate) = '2015'
 GROUP BY JSON_VALUE(S.CustomFields, '$."CountryOfManufacture"')
 ORDER BY TotalQuantity DESC;
+
+-- 18. Create a view that shows the total quantity of stock items of each stock group sold (in orders) 
+-- by year 2013-2017. [Stock Group Name, 2013, 2014, 2015, 2016, 2017]
+-- 18. Create a view that shows the total quantity of stock items of each stock group sold (in orders) 
+-- by year 2013-2017. [Stock Group Name, 2013, 2014, 2015, 2016, 2017]
+IF OBJECT_ID('Sales.vStockItemGroupSales', 'view') IS NOT NULL
+	DROP VIEW Sales.vStockItemGroupSales;
+GO
+CREATE VIEW Sales.vStockItemGroupSales
+	WITH SCHEMABINDING
+	AS
+		SELECT StockGroupName,
+			[2013], [2014], [2015], [2016], [2017]
+		FROM (
+			SELECT Sg.StockGroupName, YEAR(C.TransactionDate) AS TransactionYear,
+				SUM(I.Quantity) AS TotalQuantity
+			FROM Sales.CustomerTransactions C
+				INNER JOIN Sales.InvoiceLines I
+				ON C.InvoiceID = I.InvoiceID
+				INNER JOIN Warehouse.StockItems S
+				ON I.StockItemID = S.StockItemID
+				INNER JOIN Warehouse.StockItemStockGroups Si
+				ON S.StockItemID = Si.StockItemID
+				INNER JOIN Warehouse.StockGroups Sg
+				ON Si.StockGroupID = Sg.StockGroupID
+			WHERE YEAR(C.TransactionDate) BETWEEN '2013' AND '2017'
+			GROUP BY Sg.StockGroupName, YEAR(C.TransactionDate)
+		) SourceTable
+		PIVOT (
+			SUM(TotalQuantity)
+			FOR TransactionYear IN ([2013], [2014], [2015], [2016], [2017])
+		) PivotTable;

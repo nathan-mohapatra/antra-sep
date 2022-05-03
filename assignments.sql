@@ -349,3 +349,23 @@ CREATE VIEW Sales.vStockItemGroupSales2
 			FOR StockGroupName IN ([Clothing], [Computing Novelties], [Furry Footwear],  [Mugs], [Novelty Items], 
 				[Packaging Materials], [Toys], [T-Shirts], [USB Novelties])
 		) PivotTable;
+GO
+-- 20. Create a function, input: order id; return: total of that order. List invoices and use that 
+-- function to attach the order total to the other fields of invoices.
+CREATE FUNCTION dbo.udfGetOrderTotal(@OrderID INT)
+RETURNS MONEY
+AS
+-- Returns order total given order id
+BEGIN
+	DECLARE @ret MONEY;
+	SELECT @ret = O.UnitPrice + (O.UnitPrice * O.TaxRate)
+	FROM Sales.OrderLines O
+	WHERE O.OrderID = @OrderID
+	RETURN @ret;
+END;
+GO
+SELECT *
+FROM Sales.Invoices I
+CROSS APPLY (
+	SELECT dbo.udfGetOrderTotal(I.OrderID) AS OrderTotal
+) func;

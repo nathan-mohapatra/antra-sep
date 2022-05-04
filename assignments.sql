@@ -355,7 +355,6 @@ GO
 CREATE FUNCTION dbo.udfGetOrderTotal(@OrderID INT)
 RETURNS MONEY
 AS
--- Returns order total given order id
 BEGIN
 	DECLARE @ret MONEY;
 	SELECT @ret = O.UnitPrice + (O.UnitPrice * O.TaxRate)
@@ -369,3 +368,58 @@ FROM Sales.Invoices I
 CROSS APPLY (
 	SELECT dbo.udfGetOrderTotal(I.OrderID) AS OrderTotal
 ) func;
+GO
+-- 21. Create a new table called ods.Orders. Create a stored procedure, with proper error handling 
+-- and transactions, that input is a date; when executed, it would find orders of that day, calculate 
+-- order total, and save the information (order id, order date, order total, customer id) into the 
+-- new table. If a given date is already existing in the new table, throw an error and roll back. 
+-- Execute the stored procedure 5 times using different dates.
+CREATE SCHEMA ods;
+GO
+DROP TABLE IF EXISTS ods.Orders;
+CREATE TABLE ods.Orders(
+	OrderID INT PRIMARY KEY,
+	OrderDate DATE NOT NULL,
+	OrderTotal MONEY NOT NULL,
+	CustomerID INT NOT NULL
+
+	CONSTRAINT FK_Orders_Customers FOREIGN KEY (CustomerID)
+		REFERENCES Sales.Customers (CustomerID)
+);
+IF OBJECT_ID('ods.uspGetOrdersByDate', 'P') IS NOT NULL
+	DROP PROCEDURE ods.uspGetOrdersByDate;
+GO
+CREATE PROCEDURE ods.uspGetOrdersByDate
+	@OrderDate DATE
+AS
+BEGIN
+	SET NOCOUNT ON
+	BEGIN TRY
+		BEGIN TRANSACTION InsertRelevantOrders
+			IF EXISTS (SELECT 1 FROM ods.Orders O WHERE O.OrderDate = @OrderDate)
+				BEGIN;
+					THROW 50000, 'Stored procedure has already been executed with this date!', 1
+					ROLLBACK TRANSACTION InsertRelevantOrders
+				END
+			INSERT INTO ods.Orders
+			SELECT O.OrderID, O.OrderDate, 
+				Ol.UnitPrice + (Ol.UnitPrice * Ol.TaxRate) AS OrderTotal, O.CustomerID
+			FROM Sales.Orders O
+				INNER JOIN Sales.OrderLines Ol
+				ON O.OrderID = Ol.OrderID
+			WHERE O.OrderDate = @OrderDate
+		COMMIT TRANSACTION InsertRelevantOrders
+	END TRY
+	BEGIN CATCH
+		IF @@TRANCOUNT > 0
+			BEGIN
+				ROLLBACK TRANSACTION InsertRelevantOrders
+			END
+		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage
+	END CATCH
+END;
+EXECUTE ods.uspGetOrdersByDate '2013-01-01';
+EXECUTE ods.uspGetOrdersByDate '2013-01-02';
+EXECUTE ods.uspGetOrdersByDate '2013-01-03';
+EXECUTE ods.uspGetOrdersByDate '2013-01-04';
+EXECUTE ods.uspGetOrdersByDate '2013-01-05';

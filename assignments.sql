@@ -465,7 +465,7 @@ SELECT StockItemID, StockItemName, SupplierID, ColorID, UnitPackageID, OuterPack
 	IsChillerStock, Barcode, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, MarketingComments, InternalComments, 
 	JSON_VALUE(CustomFields, '$."CountryOfManufacture"'), DATEDIFF(DAY, ValidFrom, ValidTo), DATEDIFF(MONTH, ValidFrom, ValidTo)
 FROM Warehouse.StockItems;
-
+GO
 -- 23. Rewrite your stored procedure in (21). Now with a given date, it should wipe out all the order 
 -- data prior to the input date and load the order data that was placed in the next 7 days following 
 -- the input date.
@@ -484,7 +484,7 @@ BEGIN
 			FROM Sales.Orders O
 				INNER JOIN Sales.OrderLines Ol
 				ON O.OrderID = Ol.OrderID
-			WHERE DATEDIFF(DAY, O.OrderDate, @OrderDate) > 7;
+			WHERE DATEDIFF(DAY, @OrderDate, O.OrderDate) BETWEEN 0 AND 7;
 		COMMIT TRANSACTION DeleteOldInsertRecent
 	END TRY
 	BEGIN CATCH

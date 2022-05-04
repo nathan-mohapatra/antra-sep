@@ -381,8 +381,7 @@ CREATE TABLE ods.Orders(
 	OrderID INT PRIMARY KEY,
 	OrderDate DATE NOT NULL,
 	OrderTotal MONEY NOT NULL,
-	CustomerID INT NOT NULL
-
+	CustomerID INT NOT NULL,
 	CONSTRAINT FK_Orders_Customers FOREIGN KEY (CustomerID)
 		REFERENCES Sales.Customers (CustomerID)
 );
@@ -423,3 +422,46 @@ EXECUTE ods.uspGetOrdersByDate '2013-01-02';
 EXECUTE ods.uspGetOrdersByDate '2013-01-03';
 EXECUTE ods.uspGetOrdersByDate '2013-01-04';
 EXECUTE ods.uspGetOrdersByDate '2013-01-05';
+
+-- 22. Create a new table called ods.StockItem. It has following columns: [StockItemID], 
+-- [StockItemName] ,[SupplierID] ,[ColorID] ,[UnitPackageID] ,[OuterPackageID] ,[Brand] ,[Size] ,
+-- [LeadTimeDays] ,[QuantityPerOuter] ,[IsChillerStock] ,[Barcode] ,[TaxRate]  ,[UnitPrice],
+-- [RecommendedRetailPrice] ,[TypicalWeightPerUnit] ,[MarketingComments]  ,[InternalComments], 
+-- [CountryOfManufacture], [Range], [Shelflife]. Migrate all the data in the original stock item table.
+DROP TABLE IF EXISTS ods.StockItems;
+CREATE TABLE ods.StockItems(
+	StockItemID INT PRIMARY KEY,
+	StockItemName NVARCHAR(100) NOT NULL,
+	SupplierID INT NOT NULL,
+	ColorID INT,
+	UnitPackageID INT NOT NULL,
+	OuterPackageID INT NOT NULL,
+	Brand NVARCHAR(50),
+	Size NVARCHAR(20),
+	LeadTimeDays INT NOT NULL,
+	QuantityPerOuter INT NOT NULL,
+	IsChillerStock BIT NOT NULL,
+	Barcode NVARCHAR(50),
+	TaxRate DECIMAL(18,3) NOT NULL,
+	UnitPrice DECIMAL(18,2) NOT NULL,
+	RecommendedRetailPrice DECIMAL(18,2),
+	TypicalWeightBeforeUnit DECIMAL(18,3) NOT NULL,
+	MarketingComments NVARCHAR(MAX),
+	InternalComments NVARCHAR(MAX),
+	CountryOfManufacture NVARCHAR(50) NOT NULL,
+	Range INT NOT NULL,
+	Shelflife INT NOT NULL,
+	CONSTRAINT FK_StockItems_Suppliers FOREIGN KEY (SupplierID)
+		REFERENCES Purchasing.Suppliers (SupplierID),
+	CONSTRAINT FK_StockItems_Colors FOREIGN KEY (ColorID)
+		REFERENCES Warehouse.Colors (ColorID),
+	CONSTRAINT FK_StockItems_UPackages FOREIGN KEY (UnitPackageID)
+		REFERENCES Warehouse.PackageTypes (PackageTypeID),
+	CONSTRAINT FK_StockItems_OPackages FOREIGN KEY (OuterPackageID)
+		REFERENCES Warehouse.PackageTypes (PackageTypeID)
+);
+INSERT INTO ods.StockItems
+SELECT StockItemID, StockItemName, SupplierID, ColorID, UnitPackageID, OuterPackageID, Brand, Size, LeadTimeDays, QuantityPerOuter, 
+	IsChillerStock, Barcode, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, MarketingComments, InternalComments, 
+	JSON_VALUE(CustomFields, '$."CountryOfManufacture"'), DATEDIFF(DAY, ValidFrom, ValidTo), DATEDIFF(MONTH, ValidFrom, ValidTo)
+FROM Warehouse.StockItems;

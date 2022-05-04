@@ -392,13 +392,13 @@ CREATE PROCEDURE ods.uspGetOrdersByDate
 	@OrderDate DATE
 AS
 BEGIN
-	SET NOCOUNT ON
+	SET NOCOUNT ON;
 	BEGIN TRY
 		BEGIN TRANSACTION InsertRelevantOrders
 			IF EXISTS (SELECT 1 FROM ods.Orders O WHERE O.OrderDate = @OrderDate)
 				BEGIN;
 					THROW 50000, 'Stored procedure has already been executed with this date!', 1
-					ROLLBACK TRANSACTION InsertRelevantOrders
+					ROLLBACK TRANSACTION InsertRelevantOrders;
 				END
 			INSERT INTO ods.Orders
 			SELECT O.OrderID, O.OrderDate, 
@@ -406,15 +406,15 @@ BEGIN
 			FROM Sales.Orders O
 				INNER JOIN Sales.OrderLines Ol
 				ON O.OrderID = Ol.OrderID
-			WHERE O.OrderDate = @OrderDate
+			WHERE O.OrderDate = @OrderDate;
 		COMMIT TRANSACTION InsertRelevantOrders
 	END TRY
 	BEGIN CATCH
 		IF @@TRANCOUNT > 0
 			BEGIN
-				ROLLBACK TRANSACTION InsertRelevantOrders
+				ROLLBACK TRANSACTION InsertRelevantOrders;
 			END
-		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage
+		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
 	END CATCH
 END;
 EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-01';
@@ -469,3 +469,29 @@ FROM Warehouse.StockItems;
 -- 23. Rewrite your stored procedure in (21). Now with a given date, it should wipe out all the order 
 -- data prior to the input date and load the order data that was placed in the next 7 days following 
 -- the input date.
+ALTER PROCEDURE ods.uspGetOrdersByDate
+	@OrderDate DATE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN TRY
+		BEGIN TRANSACTION DeleteOldInsertRecent
+			DELETE O FROM ods.Orders O
+			WHERE O.OrderDate < @OrderDate;
+			INSERT INTO ods.Orders
+			SELECT O.OrderID, O.OrderDate, 
+				Ol.UnitPrice + (Ol.UnitPrice * Ol.TaxRate) AS OrderTotal, O.CustomerID
+			FROM Sales.Orders O
+				INNER JOIN Sales.OrderLines Ol
+				ON O.OrderID = Ol.OrderID
+			WHERE DATEDIFF(DAY, O.OrderDate, @OrderDate) > 7;
+		COMMIT TRANSACTION DeleteOldInsertRecent
+	END TRY
+	BEGIN CATCH
+		IF @@TRANCOUNT > 0
+			BEGIN
+				ROLLBACK TRANSACTION DeleteOldInsertRecent;
+			END
+		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+	END CATCH
+END;

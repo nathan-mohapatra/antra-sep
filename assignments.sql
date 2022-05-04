@@ -417,11 +417,11 @@ BEGIN
 		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage
 	END CATCH
 END;
-EXECUTE ods.uspGetOrdersByDate '2013-01-01';
-EXECUTE ods.uspGetOrdersByDate '2013-01-02';
-EXECUTE ods.uspGetOrdersByDate '2013-01-03';
-EXECUTE ods.uspGetOrdersByDate '2013-01-04';
-EXECUTE ods.uspGetOrdersByDate '2013-01-05';
+EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-01';
+EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-02';
+EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-03';
+EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-04';
+EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-05';
 
 -- 22. Create a new table called ods.StockItem. It has following columns: [StockItemID], 
 -- [StockItemName] ,[SupplierID] ,[ColorID] ,[UnitPackageID] ,[OuterPackageID] ,[Brand] ,[Size] ,
@@ -465,3 +465,7 @@ SELECT StockItemID, StockItemName, SupplierID, ColorID, UnitPackageID, OuterPack
 	IsChillerStock, Barcode, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, MarketingComments, InternalComments, 
 	JSON_VALUE(CustomFields, '$."CountryOfManufacture"'), DATEDIFF(DAY, ValidFrom, ValidTo), DATEDIFF(MONTH, ValidFrom, ValidTo)
 FROM Warehouse.StockItems;
+
+-- 23. Rewrite your stored procedure in (21). Now with a given date, it should wipe out all the order 
+-- data prior to the input date and load the order data that was placed in the next 7 days following 
+-- the input date.

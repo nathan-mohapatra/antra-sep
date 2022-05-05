@@ -701,3 +701,92 @@ WHILE @@FETCH_STATUS = 0 BEGIN
 END
 CLOSE cur
 DEALLOCATE cur;
+
+-- 28. Write a short essay talking about your understanding of transactions, locks and isolation levels.
+/*
+    A transaction is a sequence of operations performed (using one or more SQL statements) on a 
+database as a single logical unit of work. ACID is an ancronym that describes the fundamental
+properties of a transaction; it stands for Atomicity, Consistency, Isolation, and Durability.
+Atomicity ensures that each statement in a transaction (to read, write, update, or delete data) is
+treated as a single unit. Either the entire statement is executed, or none of it is executed. This
+property prevents data loss and corruption from occurring if, for example, your streaming data source
+fails mid-stream. Consistency ensures that transactions only make changes to tables in predefined, 
+predictable ways. Transactional consistency ensures that corruption or errors in your data do not 
+create unintended consequences for the integrity of your table. Isolation ensures that the concurrent 
+transactions do not interfere with or affect one another when multiple users are reading and writing 
+from the same table all at once. Each request can occur as though they were occurring one by one, even 
+though they are actually occurring simultaneously. Durability ensures that changes to your data made 
+by successfully executed transactions will be saved, even in the event of system failure.
+    A transaction has two outcomes: committed or rolled back. The `@@TRANSCOUNT` function returns the
+number of `BEGIN TRANSACTION` statements in the current session; it can be used to count the number
+of open local transactions. Autocommit transactions are the default transaction for Microsoft SQL
+Server. Each T-SQL statement is evaluated as a transaction and committed or rolled back according
+to its results. Successful and failed statements are committed and rolled back, respectively. Implicit 
+transactions enable Microsoft SQL Server to start a transaction for every Data Manipulation Language
+(DML) statement, but explicit commit or rollback commands are needed at the end of statements.
+Explicit transactions define a transaction exactly, with the starting and ending points of the
+transaction specified. There are also batch-scoped transactions.
+    Locks are held on Microsoft SQL Server resources, such as rows read or modified during a
+transaction, to prevent concurrent use of resources by different transactions (and the resulting
+concurrency issues). Isolation levels define how one transaction is isolated from other transactions,
+with isolation being the separation of resource or data modification made by different transactions.
+Isolation levels are described by which concurrency issues they allow, and control whether locks are
+taken, what types of locks are requested, or how long locks are held. The tradeoff between the risk
+of rolling back transactions and waiting times is encapsulated by optimistic versus pessimistic
+concurrency control, two philosophies that must be considered. With optimistic concurrency control, 
+the approach is "Let's not use too many locks and hope for the best." The readers cannot block 
+writers, the writers cannot block readers, but the writer can block another writer. When a user 
+updates data, the system checks to see if another user changed the data after it was read. If another
+user updated the data, an error is raised. Typically, the user receiving the error rolls back the
+transaction and starts over. Timestamps are mainly used to check the version of data and, when
+committing, the newest version will be used and others will need to roll back. With pessimistic
+concurrency control, the approach is "Let's be careful and try to avoid concurrency issues." After a 
+user performs an action that causes a lock to be applied, other users cannot perform actions that
+would conflict with the lock until the owner releases it. A system of locks prevent users from
+modifying data in a way that affects other users.
+    There are different isolation levels: Snapshot, Read Uncommitted, Read Commited (system default), 
+Repeatable Read, and Serializable. Snapshot follows the model of optimistic concurrency control by 
+avoiding most locking and blocks by using row versioning. When data is modified, the committed
+versions of affected rows are copied to `tempdb` and given version numbers. This operation is called 
+copy on write and is used for all inserts, updates, and deletes. When another session reads the same
+data, the committed version of the data as of the time of the reading transaction began is returned.
+Read Uncommitted is the first level of isolation, and it comes under the model of pessimistic
+concurrency control. One transaction is allowed to read the data that is about to be changed by the
+commit of another process, allowing the Dirty Read problem (i.e. another process reads the changed,
+but uncommitted data). Read Committed is the next level of isolation under this model. It only allows
+the reading of data that is committed, eliminating the Dirty Read problem. Repeatable Read is the next
+level of isolation under this model, and eliminates the Non-repeatable Read problem (i.e. one process
+is reading the data, and another process is writing to the data). The transaction has to wait until
+the read query or update of another transaction is complete. However, there is no waiting for an
+insert transaction, allowing the Phantom Read problem (i.e. two identical queries executed by two 
+different users show different output). Serialization is the highest level of isolation under this 
+model. Any transaction can be asked to wait until the current transaction completes, preventing the 
+Read Phantom problem.
+    There are many different types of locks, including but not limited to: Exclusive (X), Shared (S),
+Update (U), Intent (I), Schema (Sch), and Bulk Update (BU). Exclusive (X) will ensure that a page or 
+row will be reserved exclusively for the transaction that imposed the exclusive lock, as long as the 
+transaction holds the lock. Shared (S) will reserve a page or row to be available only for reading,
+and can be posed by several transactions at the same time. It will allow write operations, but no
+Data Definition Language (DDL) changes will be allowed. Update (U) is similar to an exclusive lock, 
+but is designed to be more flexible in a way. It can be imposed on a record that already has a shared
+lock; in this case, the update lock will impose another shared lock on the target row. Once the 
+transaction that holds the update lock is ready to change the data, the update lock will be 
+transformed into an exclusive lock. Intent (I) is used by a transaction to inform another transaction
+about its intention to acquire a lock. The purpose of such a lock is to ensure that data modification
+is executed properly by preventing another transaction from acquiring a lock on the next in-hierarchy
+object. It will not allow other transactions to acquire the exclusive lock on that table. There are
+six different types of intent locks. Schema Modification (Sch-M) for DDL will be acquired when a DDL
+statement is executed, and it will prevent access to the locked object data as the structure of the
+object is being changed. Schema Stability (Sch-S) for DML will be acquired when a schema-dependent 
+query is being compiled and executed and an execution plan is being generated. This particular lock 
+will not block other transactions from accessing the object data, and it is compatible with all locks
+except the schema modification lock. Bulk Update (BU) is designed to be used by bulk import 
+operations. When acquired, other processes will not be able to access a table during the bulk load
+execution. However, a bulk update lock will not prevent another bulk load to be processed in parallel.
+    Ironically, one of the most frequently used query hints is `WITH(NOLOCK)`. It is similar to the 
+Read Uncommitted isolation level, and is for when one wants to read data without caring too much
+about the absolute accuracy of the data. A deadlock occurs during concurrent transactions when two or
+more transactions are waiting for other, but are also blocking each other through locks. This is
+resolved automatically: The system will let the more expensive transaction go through and rollback the
+less expensive one (the victim).
+*/

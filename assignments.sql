@@ -855,10 +855,10 @@ a computationally expensive operation, the number of columns in a `GROUP BY` cla
 as much as possible. Likewise, correlated subqueries should be avoided if possible, because they need
 to execute for every row of the outer query. It is preferable to filter data before joining with a 
 `JOIN` condition (in the `ON` clause) as opposed to with a `WHERE` condition, whenever possible. When
-working with a large volume of data, a temporary table with an index is more efficient than using a
-table variable. Locks and isolation level should be used appropriately, given the situation. There
-should never be indexes missing from the database. Bulk inserts or massive updates should be used at 
-times with lower traffic, since they could block other operations for a relativey long time. Stored 
-procedures and functions should be recompiled when their set of inputs change significantly (avoids
-"parameter sniffing"-related issues).
+working with a large volume of data, using a temporary table with an index is more efficient than 
+using a table variable. Locks and isolation levels should be used appropriately, given the situation. 
+There should never be indexes missing from the database. Bulk inserts or massive updates should be 
+used at times with lower traffic, since they could block other operations for a relativey long time. 
+Stored procedures and functions should be recompiled when their set of inputs change significantly 
+(avoids "parameter sniffing"-related issues).
 */

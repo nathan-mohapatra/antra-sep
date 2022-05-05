@@ -269,15 +269,15 @@ SELECT O.*
 FROM Sales.Invoices I
 	INNER JOIN Sales.Orders O
 	ON I.OrderID = O.OrderID
-WHERE JSON_QUERY(I.ReturnedDeliveryData, '$."Events"') LIKE N'%DeliveryAttempt%DeliveryAttempt%';
+WHERE JSON_QUERY(I.ReturnedDeliveryData, '$.Events') LIKE N'%DeliveryAttempt%DeliveryAttempt%';
 
 -- 16. List all stock items that are manufactured in China. (Country of Manufacture)
 SELECT DISTINCT StockItemName
 FROM Warehouse.StockItems
-WHERE JSON_VALUE(CustomFields, '$."CountryOfManufacture"') = 'China';
+WHERE JSON_VALUE(CustomFields, '$.CountryOfManufacture') = 'China';
 
 -- 17. Total quantity of stock items sold in 2015, group by country of manufacturing.
-SELECT JSON_VALUE(S.CustomFields, '$."CountryOfManufacture"') AS CountryOfManufacture,
+SELECT JSON_VALUE(S.CustomFields, '$.CountryOfManufacture') AS CountryOfManufacture,
 	SUM(I.Quantity) AS TotalQuantity
 FROM Sales.CustomerTransactions C
 	INNER JOIN Sales.InvoiceLines I
@@ -285,7 +285,7 @@ FROM Sales.CustomerTransactions C
 	INNER JOIN Warehouse.StockItems S
 	ON I.StockItemID = S.StockItemID
 WHERE YEAR(C.TransactionDate) = '2015'
-GROUP BY JSON_VALUE(S.CustomFields, '$."CountryOfManufacture"')
+GROUP BY JSON_VALUE(S.CustomFields, '$.CountryOfManufacture')
 ORDER BY TotalQuantity DESC;
 
 -- 18. Create a view that shows the total quantity of stock items of each stock group sold (in orders) 
@@ -495,3 +495,101 @@ BEGIN
 		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
 	END CATCH
 END;
+
+-- 24. Consider the given JSON file. Looks like that it is our missed purchase orders. Migrate these 
+-- data into Stock Item, Purchase Order and Purchase Order Lines tables. Of course, save the script.
+DECLARE @json NVARCHAR(MAX)
+SET @json = '{
+   "PurchaseOrders":[
+      {
+         "StockItemName":"Panzer Video Game",
+         "Supplier":"7",
+         "UnitPackageId":"1",
+         "OuterPackageId":"6",
+         "Brand":"EA Sports",
+         "LeadTimeDays":"5",
+         "QuantityPerOuter":"1",
+         "TaxRate":"6",
+         "UnitPrice":"59.99",
+         "RecommendedRetailPrice":"69.99",
+         "TypicalWeightPerUnit":"0.5",
+         "CountryOfManufacture":"Canada",
+         "Range":"Adult",
+         "OrderDate":"2018-01-01",
+         "DeliveryMethod":"Post",
+         "ExpectedDeliveryDate":"2018-02-02",
+         "SupplierReference":"WWI2308"
+      },
+      {
+         "StockItemName":"Panzer Video Game",
+         "Supplier":"5",
+         "UnitPackageId":"1",
+         "OuterPackageId":"7",
+         "Brand":"EA Sports",
+         "LeadTimeDays":"5",
+         "QuantityPerOuter":"1",
+         "TaxRate":"6",
+         "UnitPrice":"59.99",
+         "RecommendedRetailPrice":"69.99",
+         "TypicalWeightPerUnit":"0.5",
+         "CountryOfManufacture":"Canada",
+         "Range":"Adult",
+         "OrderDate":"2018-01-025",
+         "DeliveryMethod":"Post",
+         "ExpectedDeliveryDate":"2018-02-02",
+         "SupplierReference":"269622390"
+      }
+   ]
+}'
+INSERT INTO Warehouse.StockItems
+SELECT (SELECT MAX(StockItemID) + 1 FROM Warehouse.StockItems), StockItemName, SupplierID, NULL, UnitPackageID, OuterPackageID, Brand, NULL, 
+	LeadTimeDays, QuantityPerOuter, 0, NULL, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, NULL, NULL, NULL,
+	'{"CountryOfManufacture":"' + CountryOfManufacture + '"}', '[]', 'None', 1, '2016-05-31 23:00:00.0000000', '9999-12-31 23:59:59.9999999'
+FROM OPENJSON(@json) WITH (
+	StockItemName NVARCHAR(100) '$.PurchaseOrders[0].StockItemName',
+	SupplierID INT '$.PurchaseOrders[0].Supplier',
+	UnitPackageID INT '$.PurchaseOrders[0].UnitPackageId',
+	OuterPackageID INT '$.PurchaseOrders[0].OuterPackageId',
+	Brand NVARCHAR(50) '$.PurchaseOrders[0].Brand',
+	LeadTimeDays INT '$.PurchaseOrders[0].LeadTimeDays',
+	QuantityPerOuter INT '$.PurchaseOrders[0].QuantityPerOuter',
+	TaxRate DECIMAL(18,3) '$.PurchaseOrders[0].TaxRate',
+	UnitPrice DECIMAL(18,2) '$.PurchaseOrders[0].UnitPrice',
+	RecommendedRetailPrice DECIMAL(18,2) '$.PurchaseOrders[0].RecommendedRetailPrice',
+	TypicalWeightPerUnit DECIMAL(18,3) '$.PurchaseOrders[0].TypicalWeightPerUnit',
+	CountryOfManufacture NVARCHAR(50) '$.PurchaseOrders[0].CountryOfManufacture'
+);
+INSERT INTO Purchasing.PurchaseOrders
+SELECT (SELECT MAX(PurchaseOrderID) FROM Purchasing.PurchaseOrders), ABS(CHECKSUM(NEWID()) % 13) + 1, OrderDate, 1, 2, ExpectedDeliveryDate, 
+	SupplierReference, 1, NULL, NULL, ABS(CHECKSUM(NEWID()) % 20) + 1, DATEADD(DAY, 1, OrderDate)
+FROM OPENJSON(@json) WITH (
+	OrderDate DATE '$.PurchaseOrders[0].OrderDate',
+	ExpectedDeliveryDate DATE '$.PurchaseOrders[0].ExpectedDeliveryDate',
+	SupplierReference NVARCHAR(20) '$.PurchaseOrders[0].SupplierReference'
+);
+INSERT INTO Warehouse.StockItems
+SELECT (SELECT MAX(StockItemID) + 1 FROM Warehouse.StockItems), StockItemName, SupplierID, NULL, UnitPackageID, OuterPackageID, Brand, NULL, 
+	LeadTimeDays, QuantityPerOuter, 0, NULL, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, NULL, NULL, NULL,
+	'{"CountryOfManufacture":"' + CountryOfManufacture + '"}', '[]', 'None', 1, '2016-05-31 23:00:00.0000000', '9999-12-31 23:59:59.9999999'
+FROM OPENJSON(@json) WITH (
+	StockItemName NVARCHAR(100) '$.PurchaseOrders[1].StockItemName',
+	SupplierID INT '$.PurchaseOrders[1].Supplier',
+	UnitPackageID INT '$.PurchaseOrders[1].UnitPackageId',
+	OuterPackageID INT '$.PurchaseOrders[1].OuterPackageId',
+	Brand NVARCHAR(50) '$.PurchaseOrders[1].Brand',
+	LeadTimeDays INT '$.PurchaseOrders[1].LeadTimeDays',
+	QuantityPerOuter INT '$.PurchaseOrders[1].QuantityPerOuter',
+	TaxRate DECIMAL(18,3) '$.PurchaseOrders[1].TaxRate',
+	UnitPrice DECIMAL(18,2) '$.PurchaseOrders[1].UnitPrice',
+	RecommendedRetailPrice DECIMAL(18,2) '$.PurchaseOrders[1].RecommendedRetailPrice',
+	TypicalWeightPerUnit DECIMAL(18,3) '$.PurchaseOrders[1].TypicalWeightPerUnit',
+	CountryOfManufacture NVARCHAR(50) '$.PurchaseOrders[1].CountryOfManufacture'
+);
+INSERT INTO Purchasing.PurchaseOrders
+SELECT (SELECT MAX(PurchaseOrderID) FROM Purchasing.PurchaseOrders), ABS(CHECKSUM(NEWID()) % 13) + 1, OrderDate, 1, 2, ExpectedDeliveryDate, 
+	SupplierReference, 1, NULL, NULL, ABS(CHECKSUM(NEWID()) % 20) + 1, DATEADD(DAY, 1, OrderDate)
+FROM OPENJSON(@json) WITH (
+	OrderDate DATE '$.PurchaseOrders[1].OrderDate',
+	ExpectedDeliveryDate DATE '$.PurchaseOrders[1].ExpectedDeliveryDate',
+	SupplierReference NVARCHAR(20) '$.PurchaseOrders[1].SupplierReference'
+);

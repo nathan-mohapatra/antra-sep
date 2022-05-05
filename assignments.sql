@@ -717,6 +717,7 @@ transactions do not interfere with or affect one another when multiple users are
 from the same table all at once. Each request can occur as though they were occurring one by one, even 
 though they are actually occurring simultaneously. Durability ensures that changes to your data made 
 by successfully executed transactions will be saved, even in the event of system failure.
+
     A transaction has two outcomes: committed or rolled back. The `@@TRANSCOUNT` function returns the
 number of `BEGIN TRANSACTION` statements in the current session; it can be used to count the number
 of open local transactions. Autocommit transactions are the default transaction for Microsoft SQL
@@ -726,6 +727,7 @@ transactions enable Microsoft SQL Server to start a transaction for every Data M
 (DML) statement, but explicit commit or rollback commands are needed at the end of statements.
 Explicit transactions define a transaction exactly, with the starting and ending points of the
 transaction specified. There are also batch-scoped transactions.
+
     Locks are held on Microsoft SQL Server resources, such as rows read or modified during a
 transaction, to prevent concurrent use of resources by different transactions (and the resulting
 concurrency issues). Isolation levels define how one transaction is isolated from other transactions,
@@ -744,6 +746,7 @@ concurrency control, the approach is "Let's be careful and try to avoid concurre
 user performs an action that causes a lock to be applied, other users cannot perform actions that
 would conflict with the lock until the owner releases it. A system of locks prevent users from
 modifying data in a way that affects other users.
+
     There are different isolation levels: Snapshot, Read Uncommitted, Read Commited (system default), 
 Repeatable Read, and Serializable. Snapshot follows the model of optimistic concurrency control by 
 avoiding most locking and blocks by using row versioning. When data is modified, the committed
@@ -762,6 +765,7 @@ insert transaction, allowing the Phantom Read problem (i.e. two identical querie
 different users show different output). Serialization is the highest level of isolation under this 
 model. Any transaction can be asked to wait until the current transaction completes, preventing the 
 Read Phantom problem.
+
     There are many different types of locks, including but not limited to: Exclusive (X), Shared (S),
 Update (U), Intent (I), Schema (Sch), and Bulk Update (BU). Exclusive (X) will ensure that a page or 
 row will be reserved exclusively for the transaction that imposed the exclusive lock, as long as the 
@@ -783,6 +787,7 @@ will not block other transactions from accessing the object data, and it is comp
 except the schema modification lock. Bulk Update (BU) is designed to be used by bulk import 
 operations. When acquired, other processes will not be able to access a table during the bulk load
 execution. However, a bulk update lock will not prevent another bulk load to be processed in parallel.
+
     Ironically, one of the most frequently used query hints is `WITH(NOLOCK)`. It is similar to the 
 Read Uncommitted isolation level, and is for when one wants to read data without caring too much
 about the absolute accuracy of the data. A deadlock occurs during concurrent transactions when two or

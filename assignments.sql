@@ -593,3 +593,30 @@ FROM OPENJSON(@json) WITH (
 	ExpectedDeliveryDate DATE '$.PurchaseOrders[1].ExpectedDeliveryDate',
 	SupplierReference NVARCHAR(20) '$.PurchaseOrders[1].SupplierReference'
 );
+
+-- 25. Revisit your answer in (19). Convert the result in JSON string and save it to the server using 
+-- TSQL FOR JSON PATH.
+SELECT TransactionYear,
+	[Clothing], [Computing Novelties], [Furry Footwear],  [Mugs], [Novelty Items], 
+	[Packaging Materials], [Toys], [T-Shirts], [USB Novelties]
+FROM (
+	SELECT YEAR(C.TransactionDate) AS TransactionYear, Sg.StockGroupName, 
+	SUM(I.Quantity) AS TotalQuantity
+	FROM Sales.CustomerTransactions C
+		INNER JOIN Sales.InvoiceLines I
+		ON C.InvoiceID = I.InvoiceID
+		INNER JOIN Warehouse.StockItems S
+		ON I.StockItemID = S.StockItemID
+		INNER JOIN Warehouse.StockItemStockGroups Si
+		ON S.StockItemID = Si.StockItemID
+		INNER JOIN Warehouse.StockGroups Sg
+		ON Si.StockGroupID = Sg.StockGroupID
+	WHERE YEAR(C.TransactionDate) BETWEEN '2013' AND '2017'
+	GROUP BY YEAR(C.TransactionDate), Sg.StockGroupName
+) SourceTable
+PIVOT (
+	SUM(TotalQuantity)
+	FOR StockGroupName IN ([Clothing], [Computing Novelties], [Furry Footwear],  [Mugs], [Novelty Items], 
+		[Packaging Materials], [Toys], [T-Shirts], [USB Novelties])
+) PivotTable
+FOR JSON PATH;

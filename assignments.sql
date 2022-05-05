@@ -675,9 +675,13 @@ BEGIN
 	BEGIN TRY
 		BEGIN TRANSACTION LoadInvoiceData
 			INSERT INTO ods.ConfirmedDeliveryJson
-			SELECT InvoiceDate, 
-				(SELECT * FROM Sales.Invoices I INNER JOIN Sales.InvoiceLines IL 
-				ON I.InvoiceID = IL.InvoiceID FOR JSON AUTO)
+			SELECT InvoiceDate, (
+                SELECT * 
+                FROM Sales.Invoices I 
+                    INNER JOIN Sales.InvoiceLines IL 
+				    ON I.InvoiceID = IL.InvoiceID FOR 
+                JSON AUTO
+                )
 			FROM Sales.Invoices
 			WHERE InvoiceDate = @InvoiceDate;
 		COMMIT TRANSACTION LoadInvoiceData
@@ -720,32 +724,32 @@ by successfully executed transactions will be saved, even in the event of system
 
     A transaction has two outcomes: committed or rolled back. The `@@TRANSCOUNT` function returns the
 number of `BEGIN TRANSACTION` statements in the current session; it can be used to count the number
-of open local transactions. Autocommit transactions are the default transaction for Microsoft SQL
-Server. Each T-SQL statement is evaluated as a transaction and committed or rolled back according
-to its results. Successful and failed statements are committed and rolled back, respectively. Implicit 
-transactions enable Microsoft SQL Server to start a transaction for every Data Manipulation Language
-(DML) statement, but explicit commit or rollback commands are needed at the end of statements.
-Explicit transactions define a transaction exactly, with the starting and ending points of the
-transaction specified. There are also batch-scoped transactions.
+of open local transactions. Autocommit transactions are the default transaction for SQL Server. Each 
+T-SQL statement is evaluated as a transaction and committed or rolled back according to its results. 
+Successful and failed statements are committed and rolled back, respectively. Implicit transactions 
+enable SQL Server to start a transaction for every Data Manipulation Language (DML) statement, but 
+explicit commit or rollback commands are needed at the end of statements. Explicit transactions define 
+a transaction exactly, with the starting and ending points of the transaction specified. There are 
+also batch-scoped transactions.
 
-    Locks are held on Microsoft SQL Server resources, such as rows read or modified during a
-transaction, to prevent concurrent use of resources by different transactions (and the resulting
-concurrency issues). Isolation levels define how one transaction is isolated from other transactions,
-with isolation being the separation of resource or data modification made by different transactions.
-Isolation levels are described by which concurrency issues they allow, and control whether locks are
-taken, what types of locks are requested, or how long locks are held. The tradeoff between the risk
-of rolling back transactions and waiting times is encapsulated by optimistic versus pessimistic
-concurrency control, two philosophies that must be considered. With optimistic concurrency control, 
-the approach is "Let's not use too many locks and hope for the best." The readers cannot block 
-writers, the writers cannot block readers, but the writer can block another writer. When a user 
-updates data, the system checks to see if another user changed the data after it was read. If another
-user updated the data, an error is raised. Typically, the user receiving the error rolls back the
-transaction and starts over. Timestamps are mainly used to check the version of data and, when
-committing, the newest version will be used and others will need to roll back. With pessimistic
-concurrency control, the approach is "Let's be careful and try to avoid concurrency issues." After a 
-user performs an action that causes a lock to be applied, other users cannot perform actions that
-would conflict with the lock until the owner releases it. A system of locks prevent users from
-modifying data in a way that affects other users.
+    Locks are held on SQL Server resources, such as rows read or modified during a transaction, to 
+prevent concurrent use of resources by different transactions (and the resulting concurrency issues). 
+Isolation levels define how one transaction is isolated from other transactions, with isolation being 
+the separation of resource or data modification made by different transactions. Isolation levels are 
+described by which concurrency issues they allow, and control whether locks are taken, what types of 
+locks are requested, or how long locks are held. The tradeoff between the risk of rolling back 
+transactions and waiting times is encapsulated by optimistic versus pessimistic concurrency control, 
+two philosophies that must be considered. With optimistic concurrency control, the approach is "Let's 
+not use too many locks and hope for the best." The readers cannot block writers, the writers cannot 
+block readers, but the writer can block another writer. When a user updates data, the system checks 
+to see if another user changed the data after it was read. If another user updated the data, an error 
+is raised. Typically, the user receiving the error rolls back the transaction and starts over. 
+Timestamps are mainly used to check the version of data and, when committing, the newest version will 
+be used and others will need to roll back. With pessimistic concurrency control, the approach is 
+"Let's be careful and try to avoid concurrency issues." After a user performs an action that causes a 
+lock to be applied, other users cannot perform actions that would conflict with the lock until the 
+owner releases it. A system of locks prevent users from modifying data in a way that affects other 
+users.
 
     There are different isolation levels: Snapshot, Read Uncommitted, Read Commited (system default), 
 Repeatable Read, and Serializable. Snapshot follows the model of optimistic concurrency control by 
@@ -794,4 +798,67 @@ about the absolute accuracy of the data. A deadlock occurs during concurrent tra
 more transactions are waiting for each other, but are also blocking each other through locks. This is
 resolved automatically: The system will let the more expensive transaction go through and rollback the
 less expensive transaction (the "victim").
+*/
+
+-- 29. Write a short essay, plus screenshots talking about performance tuning in SQL Server. Must 
+-- include Tuning Advisor, Extended Events, DMV, Logs and Execution Plan.
+/*
+    Before discussing performance tuning in SQL Server, we must discuss performance monitoring in SQL 
+Server. The goal of monitoring databases is to assess how a server is performing. Effective monitoring 
+involves taking periodic snapshots of current performance to isolate processes that are causing 
+problems, and gathering data continuously over time to track performance trends. Ongoing evaluation 
+of the database performance helps you minimize response times and maximize throughput, yielding 
+optimal performance. Efficient network traffic, disk I/O, and CPU usage are key to peak performance. 
+You need to thoroughly analyze the application requirements, understand the logical and physical 
+structure of the data, assess database usage, and negotiate tradeoffs between conflicting uses such as 
+online transaction processing (OLTP) versus decision support.
+
+    There are different performance monitoring tools that help locate issues on a server scale: 
+Extended Events, SQL Server Profiler, Dynamic Management Views (DMV), Database Console Commands (DBCC),
+and Error Logs. Extended Events is a lightweight performance monitoring system that uses very few
+performance resources. It provides three graphical user interfaces (New Session Wizard, New Session,
+and XE Profiler) to create, modify, display, and analyze your session data. SQL Server Profiler is an
+interface to create and manage traces and analyze and replay trace results. Events are saved in a file 
+that can later be analyzed or used to replay a specific series of steps when diagnosing a problem. It
+should be noted that this tool is deprecated and should currently be avoided, as it has a negative
+impact on performance. Dynamic Management Views (DMV) and functions return server state information
+that can be used to monitor the health of a server instance, diagnose problems, and tune performance.
+Their schemas and the internal, implementation-specific state data they return may change in future
+releases of SQL Server. The Transact-SQL programming language provides Database Console Command (DBCC) 
+statements that act as Database Console Commands for SQL Server. These statements are grouped into 
+four categories: maintenance, miscellaneous, informational, and validation. Error Logs provide an 
+overall picture of events occurring on the Windows Server and Windows operating systems as a whole, as 
+well as events in SQL Server, SQL Server Agent, and full-text search. It contains information about 
+events in SQL Server that is not available elsewhere. You can use the information in the error log to 
+troubleshoot SQL Server-related problems.
+
+    There are different performance monitoring tools that help locate issues on a workload scale, such
+as Tuning Advisor and Execution Plans. When the Database Engine Tuning Advisor tunes databases, it 
+creates summaries, recommendations, reports, and tuning logs. You can use the tuning log output to 
+troubleshoot Database Engine Tuning Advisor tuning sessions. You can use the summaries, 
+recommendations, and reports to determine whether you want to implement tuning recommendations or 
+continue tuning until you achieve the query performance improvements that you need for your SQL 
+Server installation. To be able to execute queries, the SQL Server Database Engine must analyze the 
+statement to determine the most efficient way to access the required data. This analysis is handled by 
+a component called the Query Optimizer. The input to the Query Optimizer consists of the query, the 
+database schema (table and index definitions), and the database statistics. The output of the Query 
+Optimizer is a query execution plan, sometimes referred to as a query plan, or Execution Plan. It is 
+defined as the sequence in which the source tables are accessed, the methods used to extract data
+from each table, and the methods used to compute calculations, and how to filter, aggregate, and sort
+data from each table.
+
+    SQL Server performance tuning encompasses a set of processes and procedures designed to optimize 
+relational database queries, so they can run as efficiently as possible. SQL tuning involves several 
+elements, including identifying which queries are experiencing slowdowns and optimizing them for 
+maximum efficiency. There are many best practices related to performance tuning: Since `GROUP BY` is
+a computationally expensive operation, the number of columns in a `GROUP BY` clause should be reduced
+as much as possible. Likewise, correlated subqueries should be avoided if possible, because they need
+to execute for every row of the outer query. It is preferable to filter data before joining with a 
+`JOIN` condition (in the `ON` clause) as opposed to with a `WHERE` condition, whenever possible. When
+working with a large volume of data, a temporary table with an index is more efficient than using a
+table variable. Locks and isolation level should be used appropriately, given the situation. There
+should never be indexes missing from the database. Bulk inserts or massive updates should be used at 
+times with lower traffic, since they could block other operations for a relativey long time. Stored 
+procedures and functions should be recompiled when their set of inputs change significantly (avoids
+"parameter sniffing"-related issues).
 */

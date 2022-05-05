@@ -791,7 +791,7 @@ execution. However, a bulk update lock will not prevent another bulk load to be 
     Ironically, one of the most frequently used query hints is `WITH(NOLOCK)`. It is similar to the 
 Read Uncommitted isolation level, and is for when one wants to read data without caring too much
 about the absolute accuracy of the data. A deadlock occurs during concurrent transactions when two or
-more transactions are waiting for other, but are also blocking each other through locks. This is
+more transactions are waiting for each other, but are also blocking each other through locks. This is
 resolved automatically: The system will let the more expensive transaction go through and rollback the
-less expensive one (the victim).
+less expensive transaction (the "victim").
 */

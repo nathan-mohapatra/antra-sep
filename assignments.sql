@@ -653,11 +653,6 @@ GO
 -- as invoice line information (all columns) and forge them into a JSON string and then insert into 
 -- the new table just created. Then write a query to run the stored procedure for each DATE that 
 -- customer id 1 got something delivered to him.
--- 27. Create a new table called ods.ConfirmedDeviveryJson with 3 columns (id, date, value). Create a 
--- stored procedure, input is a date. The logic would load invoice information (all columns) as well 
--- as invoice line information (all columns) and forge them into a JSON string and then insert into 
--- the new table just created. Then write a query to run the stored procedure for each DATE that 
--- customer id 1 got something delivered to him.
 DROP TABLE IF EXISTS ods.ConfirmedDeliveryJson;
 CREATE TABLE ods.ConfirmedDeliveryJson(
 	ConfirmedDeliveryID INT NOT NULL IDENTITY (1,1) PRIMARY KEY,

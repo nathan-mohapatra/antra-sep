@@ -378,7 +378,7 @@ CREATE SCHEMA ods;
 GO
 DROP TABLE IF EXISTS ods.Orders;
 CREATE TABLE ods.Orders(
-	OrderID INT PRIMARY KEY,
+	OrderID INT NOT NULL PRIMARY KEY,
 	OrderDate DATE NOT NULL,
 	OrderTotal MONEY NOT NULL,
 	CustomerID INT NOT NULL,
@@ -430,7 +430,7 @@ EXECUTE ods.uspGetOrdersByDate @OrderDate = '2013-01-05';
 -- [CountryOfManufacture], [Range], [Shelflife]. Migrate all the data in the original stock item table.
 DROP TABLE IF EXISTS ods.StockItems;
 CREATE TABLE ods.StockItems(
-	StockItemID INT PRIMARY KEY,
+	StockItemID INT NOT NULL PRIMARY KEY,
 	StockItemName NVARCHAR(100) NOT NULL,
 	SupplierID INT NOT NULL,
 	ColorID INT,
@@ -647,3 +647,57 @@ PIVOT (
 		[Packaging Materials], [Toys], [T-Shirts], [USB Novelties])
 ) PivotTable
 FOR XML PATH;
+GO
+-- 27. Create a new table called ods.ConfirmedDeviveryJson with 3 columns (id, date, value). Create a 
+-- stored procedure, input is a date. The logic would load invoice information (all columns) as well 
+-- as invoice line information (all columns) and forge them into a JSON string and then insert into 
+-- the new table just created. Then write a query to run the stored procedure for each DATE that 
+-- customer id 1 got something delivered to him.
+-- 27. Create a new table called ods.ConfirmedDeviveryJson with 3 columns (id, date, value). Create a 
+-- stored procedure, input is a date. The logic would load invoice information (all columns) as well 
+-- as invoice line information (all columns) and forge them into a JSON string and then insert into 
+-- the new table just created. Then write a query to run the stored procedure for each DATE that 
+-- customer id 1 got something delivered to him.
+DROP TABLE IF EXISTS ods.ConfirmedDeliveryJson;
+CREATE TABLE ods.ConfirmedDeliveryJson(
+	ConfirmedDeliveryID INT NOT NULL IDENTITY (1,1) PRIMARY KEY,
+	ConfirmedDeliveryDate DATE NOT NULL,
+	ConfirmedDeliveryInfo NVARCHAR(MAX) NOT NULL
+);
+IF OBJECT_ID('ods.uspGetConfirmedDeliveries', 'P') IS NOT NULL
+	DROP PROCEDURE ods.uspGetConfirmedDeliveries;
+GO
+CREATE PROCEDURE ods.uspGetConfirmedDeliveries
+	@InvoiceDate DATE
+AS
+BEGIN
+	SET NOCOUNT ON;
+	BEGIN TRY
+		BEGIN TRANSACTION LoadInvoiceData
+			INSERT INTO ods.ConfirmedDeliveryJson
+			SELECT InvoiceDate, 
+				(SELECT * FROM Sales.Invoices I INNER JOIN Sales.InvoiceLines IL 
+				ON I.InvoiceID = IL.InvoiceID FOR JSON AUTO)
+			FROM Sales.Invoices
+			WHERE InvoiceDate = @InvoiceDate;
+		COMMIT TRANSACTION LoadInvoiceData
+	END TRY
+	BEGIN CATCH
+		IF @@TRANCOUNT > 0
+			BEGIN
+				ROLLBACK TRANSACTION LoadInvoiceData;
+			END
+		SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+	END CATCH
+END;
+DECLARE @RelevantInvoiceDate DATE
+DECLARE cur CURSOR LOCAL FOR
+	SELECT InvoiceDate FROM Sales.Invoices WHERE CustomerID = 1
+OPEN cur
+FETCH NEXT FROM cur INTO @RelevantInvoiceDate
+WHILE @@FETCH_STATUS = 0 BEGIN
+	EXECUTE ods.uspGetConfirmedDeliveries @InvoiceDate = @RelevantInvoiceDate
+	FETCH NEXT FROM cur INTO @RelevantInvoiceDate
+END
+CLOSE cur
+DEALLOCATE cur;

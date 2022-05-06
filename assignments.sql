@@ -546,52 +546,52 @@ SELECT (SELECT MAX(StockItemID) + 1 FROM Warehouse.StockItems), StockItemName, S
 	LeadTimeDays, QuantityPerOuter, 0, NULL, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, NULL, NULL, NULL,
 	'{"CountryOfManufacture":"' + CountryOfManufacture + '"}', '[]', 'None', 1, '2016-05-31 23:00:00.0000000', '9999-12-31 23:59:59.9999999'
 FROM OPENJSON(@json) WITH (
-	StockItemName			NVARCHAR(100)	'$.PurchaseOrders[0].StockItemName',
-	SupplierID				INT				'$.PurchaseOrders[0].Supplier',
-	UnitPackageID			INT				'$.PurchaseOrders[0].UnitPackageId',
-	OuterPackageID			INT				'$.PurchaseOrders[0].OuterPackageId',
-	Brand					NVARCHAR(50)	'$.PurchaseOrders[0].Brand',
-	LeadTimeDays			INT				'$.PurchaseOrders[0].LeadTimeDays',
-	QuantityPerOuter		INT				'$.PurchaseOrders[0].QuantityPerOuter',
-	TaxRate					DECIMAL(18,3)	'$.PurchaseOrders[0].TaxRate',
-	UnitPrice				DECIMAL(18,2)	'$.PurchaseOrders[0].UnitPrice',
-	RecommendedRetailPrice	DECIMAL(18,2)	'$.PurchaseOrders[0].RecommendedRetailPrice',
-	TypicalWeightPerUnit	DECIMAL(18,3)	'$.PurchaseOrders[0].TypicalWeightPerUnit',
-	CountryOfManufacture	NVARCHAR(50)	'$.PurchaseOrders[0].CountryOfManufacture'
+	StockItemName NVARCHAR(100) '$.PurchaseOrders[0].StockItemName',
+	SupplierID INT '$.PurchaseOrders[0].Supplier',
+	UnitPackageID INT '$.PurchaseOrders[0].UnitPackageId',
+	OuterPackageID INT '$.PurchaseOrders[0].OuterPackageId',
+	Brand NVARCHAR(50) '$.PurchaseOrders[0].Brand',
+	LeadTimeDays INT '$.PurchaseOrders[0].LeadTimeDays',
+	QuantityPerOuter INT '$.PurchaseOrders[0].QuantityPerOuter',
+	TaxRate DECIMAL(18,3) '$.PurchaseOrders[0].TaxRate',
+	UnitPrice DECIMAL(18,2) '$.PurchaseOrders[0].UnitPrice',
+	RecommendedRetailPrice DECIMAL(18,2) '$.PurchaseOrders[0].RecommendedRetailPrice',
+	TypicalWeightPerUnit DECIMAL(18,3) '$.PurchaseOrders[0].TypicalWeightPerUnit',
+	CountryOfManufacture NVARCHAR(50) '$.PurchaseOrders[0].CountryOfManufacture'
 );
 INSERT INTO Purchasing.PurchaseOrders
 SELECT (SELECT MAX(PurchaseOrderID) FROM Purchasing.PurchaseOrders), ABS(CHECKSUM(NEWID()) % 13) + 1, OrderDate, 1, 2, ExpectedDeliveryDate, 
 	SupplierReference, 1, NULL, NULL, ABS(CHECKSUM(NEWID()) % 20) + 1, DATEADD(DAY, 1, OrderDate)
 FROM OPENJSON(@json) WITH (
-	OrderDate				DATE			'$.PurchaseOrders[0].OrderDate',
-	ExpectedDeliveryDate	DATE			'$.PurchaseOrders[0].ExpectedDeliveryDate',
-	SupplierReference		NVARCHAR(20)	'$.PurchaseOrders[0].SupplierReference'
+	OrderDate DATE '$.PurchaseOrders[0].OrderDate',
+	ExpectedDeliveryDate DATE '$.PurchaseOrders[0].ExpectedDeliveryDate',
+	SupplierReference NVARCHAR(20) '$.PurchaseOrders[0].SupplierReference'
 );
 INSERT INTO Warehouse.StockItems
 SELECT (SELECT MAX(StockItemID) + 1 FROM Warehouse.StockItems), StockItemName, SupplierID, NULL, UnitPackageID, OuterPackageID, Brand, NULL, 
 	LeadTimeDays, QuantityPerOuter, 0, NULL, TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, NULL, NULL, NULL,
 	'{"CountryOfManufacture":"' + CountryOfManufacture + '"}', '[]', 'None', 1, '2016-05-31 23:00:00.0000000', '9999-12-31 23:59:59.9999999'
 FROM OPENJSON(@json) WITH (
-	StockItemName NVARCHAR(100)				'$.PurchaseOrders[1].StockItemName',
-	SupplierID				INT				'$.PurchaseOrders[1].Supplier',
-	UnitPackageID			INT				'$.PurchaseOrders[1].UnitPackageId',
-	OuterPackageID			INT				'$.PurchaseOrders[1].OuterPackageId',
-	Brand					NVARCHAR(50)	'$.PurchaseOrders[1].Brand',
-	LeadTimeDays			INT				'$.PurchaseOrders[1].LeadTimeDays',
-	QuantityPerOuter		INT				'$.PurchaseOrders[1].QuantityPerOuter',
-	TaxRate					DECIMAL(18,3)	'$.PurchaseOrders[1].TaxRate',
-	UnitPrice				DECIMAL(18,2)	'$.PurchaseOrders[1].UnitPrice',
-	RecommendedRetailPrice	DECIMAL(18,2)	'$.PurchaseOrders[1].RecommendedRetailPrice',
-	TypicalWeightPerUnit	DECIMAL(18,3)	'$.PurchaseOrders[1].TypicalWeightPerUnit',
-	CountryOfManufacture	NVARCHAR(50)	'$.PurchaseOrders[1].CountryOfManufacture'
+	StockItemName NVARCHAR(100) '$.PurchaseOrders[1].StockItemName',
+	SupplierID INT '$.PurchaseOrders[1].Supplier',
+	UnitPackageID INT '$.PurchaseOrders[1].UnitPackageId',
+	OuterPackageID INT '$.PurchaseOrders[1].OuterPackageId',
+	Brand NVARCHAR(50) '$.PurchaseOrders[1].Brand',
+	LeadTimeDays INT '$.PurchaseOrders[1].LeadTimeDays',
+	QuantityPerOuter INT '$.PurchaseOrders[1].QuantityPerOuter',
+	TaxRate DECIMAL(18,3) '$.PurchaseOrders[1].TaxRate',
+	UnitPrice DECIMAL(18,2) '$.PurchaseOrders[1].UnitPrice',
+	RecommendedRetailPrice DECIMAL(18,2) '$.PurchaseOrders[1].RecommendedRetailPrice',
+	TypicalWeightPerUnit DECIMAL(18,3) '$.PurchaseOrders[1].TypicalWeightPerUnit',
+	CountryOfManufacture NVARCHAR(50) '$.PurchaseOrders[1].CountryOfManufacture'
 );
 INSERT INTO Purchasing.PurchaseOrders
 SELECT (SELECT MAX(PurchaseOrderID) FROM Purchasing.PurchaseOrders), ABS(CHECKSUM(NEWID()) % 13) + 1, OrderDate, 1, 2, ExpectedDeliveryDate, 
 	SupplierReference, 1, NULL, NULL, ABS(CHECKSUM(NEWID()) % 20) + 1, DATEADD(DAY, 1, OrderDate)
 FROM OPENJSON(@json) WITH (
-	OrderDate				DATE			'$.PurchaseOrders[1].OrderDate',
-	ExpectedDeliveryDate	DATE			'$.PurchaseOrders[1].ExpectedDeliveryDate',
-	SupplierReference		NVARCHAR(20)	'$.PurchaseOrders[1].SupplierReference'
+	OrderDate DATE '$.PurchaseOrders[1].OrderDate',
+	ExpectedDeliveryDate DATE '$.PurchaseOrders[1].ExpectedDeliveryDate',
+	SupplierReference NVARCHAR(20) '$.PurchaseOrders[1].SupplierReference'
 );
 
 -- 25. Revisit your answer in (19). Convert the result in JSON string and save it to the server using 

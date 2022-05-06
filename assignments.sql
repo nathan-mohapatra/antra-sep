@@ -671,12 +671,12 @@ BEGIN
 		BEGIN TRANSACTION LoadInvoiceData
 			INSERT INTO ods.ConfirmedDeliveryJson
 			SELECT InvoiceDate, (
-                SELECT * 
-                FROM Sales.Invoices I 
-                    INNER JOIN Sales.InvoiceLines IL 
-				    ON I.InvoiceID = IL.InvoiceID FOR 
-                JSON AUTO
-                )
+				SELECT * 
+				FROM Sales.Invoices I 
+					INNER JOIN Sales.InvoiceLines IL 
+					ON I.InvoiceID = IL.InvoiceID FOR 
+				JSON AUTO
+				)
 			FROM Sales.Invoices
 			WHERE InvoiceDate = @InvoiceDate;
 		COMMIT TRANSACTION LoadInvoiceData

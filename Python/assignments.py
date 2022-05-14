@@ -1,31 +1,23 @@
 import json
 
 # 1. Create a script that will read and parse the given files and remove duplicates using python, then write back into a single CSV
-unique_lines = set()  # to ignore duplicates
-OUTFILE_PATH = './python/io/people.csv'
-outfile = open(OUTFILE_PATH, 'a', encoding='utf-8')
-
 def get_csv(infile):
     """
     Parses file, cleans data, and appends unique lines to csv file
     
     :infile: Input file
     """
-
     next(infile)  # skip header
     for line in infile:
         line = line.split()
 
-        # clean first name and last name
         first, last = line[0], line[1]
         line[0], line[1] = first.title(), last.title()
 
-        # clean phone number
         phone = line[3]
         if len(phone) == 10:
             line[3] = '-'.join([phone[:3], phone[3:6], phone[6:]])
 
-        # clean address number
         address_no = line[4]
         line[4] = address_no[-4:]
 
@@ -33,6 +25,11 @@ def get_csv(infile):
         if line not in unique_lines:
             unique_lines.add(line)
             outfile.write(line + '\n')
+
+unique_lines = set()  # to ignore duplicates
+
+OUTFILE_PATH = './python/io/people.csv'
+outfile = open(OUTFILE_PATH, 'a', encoding='utf-8')
 
 INFILE_PATH = './python/io/people_1.txt'
 with open(INFILE_PATH, 'r', encoding='utf-8') as infile:

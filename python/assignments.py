@@ -58,3 +58,23 @@ for i in range(NUM_SPLITS):
 
     with open(f'./python/io/movie_{i + 1}.json', 'w', encoding='utf-8') as outfile:
         json.dump(json_split, outfile, indent=4, ensure_ascii=False)
+
+# 3. A paragraph on what PaaS, SaaS and IaaS are and the differences between them.
+"""
+    Infrastructure as a Service (IaaS) provides end users with cloud-based alternatives to physical, 
+on-premise infrastructure, allowing businesses to purchase resources on-demand and eliminate capital 
+expenditure. IaaS works primarily with cloud-based and pay-as-you-go services such as storage,
+networking, and virtualization. Platform as a Service (PaaS) provides developers with a framework, 
+software, and tools needed to develop applications and software——all accessible through the internet.
+Often seen as a scaled-down version of IaaS, PaaS gives its customers a broader access to servers,
+storage, and networking, all managed by a third-party provider. PaaS focuses primarily on hardware
+and software tools available over the internet. Software as a Service (SaaS) is the most commonly 
+used service within the cloud market. SaaS platforms make software available to users over the 
+internet, usually for a monthly subscription fee. They are typically ready-to-use and run from a 
+user's web browser, which allows businesses to avoid any additional downloads or application
+installations. To summarize, IaaS builds the infrastructure of a cloud-based technology, PaaS helps
+developers build custom applications via an API that can be delivered over the cloud, and SaaS is
+cloud-based software that companies can sell and use. In addition to differing use cases with pros
+and cons, these services present a tradeoff between direct control and flexibility and ease of
+operation.
+"""

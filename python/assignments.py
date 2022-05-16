@@ -1,6 +1,7 @@
 import json
 
-# 1. Create a script that will read and parse the given files and remove duplicates using python, then write back into a single CSV
+# 1. Create a script that will read and parse the given files and remove duplicates using python, 
+# then write back into a single CSV
 def get_csv(infile):
     """
     Parses file, cleans data, and appends unique lines to csv file
@@ -41,6 +42,7 @@ with open(INFILE_PATH, 'r', encoding='utf-8') as infile:
         
 outfile.close()
 
+
 # 2. Split movie.json into 8 smaller JSON files.
 NUM_SPLITS = 8
 
@@ -58,6 +60,7 @@ for i in range(NUM_SPLITS):
 
     with open(f'./python/io/movie_{i + 1}.json', 'w', encoding='utf-8') as outfile:
         json.dump(json_split, outfile, indent=4, ensure_ascii=False)
+
 
 # 3. A paragraph on what PaaS, SaaS and IaaS are and the differences between them.
 """
@@ -77,4 +80,49 @@ developers build custom applications via an API that can be delivered over the c
 cloud-based software that companies can sell and use. In addition to differing use cases with pros
 and cons, these services present a tradeoff between direct control and flexibility and ease of
 operation.
+"""
+
+
+# 4. A paragraph on the differences between ETL and ELT. Also, list the pros and cons of each in a 
+# chart.
+"""
+    While they sound similar, the Extract, Transform, and Load process for data (ETL) and the
+Extract, Load, and Transform process for data (ELT) are quite different. In ETL, data moves from
+the data source to staging into the data warehouse; however, in ELT, there is no need for data 
+staging because the data warehouse (or more practically the data lake) is leveraged to do basic
+transformations. ETL can help with data privacy and compliance by cleaning sensitive and secure data
+even before loading into the data warehouse, and can perform sophisticated data transformations while
+being more cost-effective than ELT.
+-----------------------------------------------------------------------------------------------------
+ETL Pros                                        | ETL Cons          
+------------------------------------------------|----------------------------------------------------                                
+- Well-developed process with experts readily   | - Only transforms and loads data that you decide
+available; easier to develop                    | is necessary when creating data warehouse
+                                                |
+- Can redact or remove sensitive information    | - Not compatible with data lakes
+before putting it into a data warehouse or      |
+cloud server; satisfies compliance standards    | - Not ideal for dealing with massive amounts of
+and protects data                               | structured and unstructured data
+                                                |
+- Ideal for dealing with smaller datasets that  | - Aggregation becomes more complicated as dataset
+require complex transformations                 | increases in size
+                                                |
+- Requires little maintenance (if cloud-based)  | - Multi-stage process necessitates longer load
+                                                | times
+-----------------------------------------------------------------------------------------------------
+ELT Pros                                        | ELT Cons
+------------------------------------------------|----------------------------------------------------
+- Loads all data immediately; users can         | - Relatively new technology without many experts
+determine which data to transform or analyze    | readily available; more challenging to develop
+                                                |
+- Compatible with data lakes                    | - Requires you to upload data before redacting or
+                                                | removing sensitive information; could violate
+- Ideal for dealing with massive amount of      | compliance standards or endanger data
+structured and unstructured data                |
+                                                | - Not ideal for dealing with smaller datasets that
+- Can quickly process massive amounts of data   | require complex transformations
+                                                |
+- Requires little maintenance                   | - The need to continuously transform data slows
+                                                | down the total time it takes for analysis
+-----------------------------------------------------------------------------------------------------
 """

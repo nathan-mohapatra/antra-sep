@@ -35,8 +35,7 @@ with open('./python/io/people_2.txt', 'r', encoding='utf-8') as infile2:
 # 2. Split movie.json into 8 smaller JSON files.
 NUM_SPLITS = 8
 
-INFILE_PATH = './python/io/movie.json'
-with open(INFILE_PATH, 'r', encoding='utf-8') as infile:
+with open('./python/io/movie.json', 'r', encoding='utf-8') as infile:
     json_data = json.load(infile)
 
 # number of items in each output file

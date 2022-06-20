@@ -1,0 +1,19 @@
+WITH FiveSecondAverages AS (
+    SELECT
+        id,
+        AVG(uv) AS AverageUV,
+        AVG(temperature) AS AverageTemperature,
+        AVG(humidity) AS AverageHumidity,
+        (CASE WHEN AVG(temperature) > 85 AND AVG(humidity) > 85 THEN 1 ELSE 0 END) AS IsSweaty,
+        DATEADD(SECOND, AVG(DATEDIFF(SECOND, '1970-01-01', [timestamp])), '1970-01-01') AS EstimatedTime
+    FROM
+        [antra-sep-input] TIMESTAMP BY [timestamp]
+    GROUP BY
+        id, TUMBLINGWINDOW(DURATION(SECOND, 5))
+)
+SELECT
+    *
+INTO
+    [antra-sep-output]
+FROM
+    FiveSecondAverages

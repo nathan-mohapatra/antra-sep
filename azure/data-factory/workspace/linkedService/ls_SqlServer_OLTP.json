@@ -1,0 +1,16 @@
+{
+	"name": "ls_SqlServer_OLTP",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": "integrated security=False;data source=antra-sep-wwi-oltp-server.database.windows.net;initial catalog=wwi-oltp;user id=nathan-mohapatra",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIwZGE0OGY2YS1kZmQxLTRmNTItYWViYy01NTBmM2FhYjdiNTMiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "selfHostedIR",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

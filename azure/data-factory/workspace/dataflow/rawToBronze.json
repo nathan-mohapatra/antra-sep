@@ -1,0 +1,70 @@
+{
+	"name": "rawToBronze",
+	"properties": {
+		"folder": {
+			"name": "movie"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "raw_movie",
+						"type": "DatasetReference"
+					},
+					"name": "raw"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "bronze_movie_tmp",
+						"type": "DatasetReference"
+					},
+					"name": "bronze"
+				}
+			],
+			"transformations": [
+				{
+					"name": "flatten"
+				},
+				{
+					"name": "stringify"
+				},
+				{
+					"name": "addMetadata"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          movie as (Id as integer, Title as string, Overview as string, Tagline as string, Budget as double, Revenue as double, ImdbUrl as string, TmdbUrl as string, PosterUrl as string, BackdropUrl as string, OriginalLanguage as string, ReleaseDate as string, RunTime as integer, Price as double, CreatedDate as string, UpdatedDate as string, UpdatedBy as string, CreatedBy as string, genres as (id as integer, name as string)[])[]",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> raw",
+				"raw foldDown(unroll(movie),",
+				"     mapColumn(",
+				"          value = movie",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flatten",
+				"flatten stringify(value = value ? string,",
+				"     format: 'json') ~> stringify",
+				"stringify derive(datasource = \"antrasepadlsgen2\",",
+				"          ingestdate = currentDate(),",
+				"          ingesttime = currentTimestamp(),",
+				"          status = \"new\") ~> addMetadata",
+				"addMetadata sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> bronze"
+			]
+		}
+	}
+}

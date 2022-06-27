@@ -1,0 +1,33 @@
+{
+	"name": "olap",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_AzureSqlDatabase_OLAP",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"olap_schema_name": {
+				"type": "string"
+			},
+			"olap_table_name": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "wide_world_importers"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().olap_schema_name",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().olap_table_name",
+				"type": "Expression"
+			}
+		}
+	}
+}

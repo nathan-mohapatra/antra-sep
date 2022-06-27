@@ -1,0 +1,559 @@
+{
+	"name": "wide_world_importers",
+	"properties": {
+		"activities": [
+			{
+				"name": "iterate_oltp",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "sp_drop_integration",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.oltp_table_list",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "old_watermark",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT * FROM watermarktable WHERE TableName = '@{item().TABLE_NAME}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "watermark_dataset",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "new_watermark",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "SELECT MAX(@{item().WaterMark_Column}) AS NewWatermarkvalue FROM @{item().TABLE_NAME}",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "source_dataset",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "incremental_copy",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "new_watermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "old_watermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "select * from @{item().TABLE_NAME} where @{item().WaterMark_Column} > '@{activity('old_watermark').output.firstRow.WatermarkValue}' and @{item().WaterMark_Column} <= '@{activity('new_watermark').output.firstRow.NewWatermarkvalue}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"sqlWriterStoredProcedureName": {
+										"value": "@{item().StoredProcedureNameForMergeOperation}",
+										"type": "Expression"
+									},
+									"sqlWriterTableType": {
+										"value": "@{item().TableType}",
+										"type": "Expression"
+									},
+									"storedProcedureTableTypeParameterName": {
+										"value": "@{item().TABLE_NAME}",
+										"type": "Expression"
+									},
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "source_dataset",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "sink_dataset",
+									"type": "DatasetReference",
+									"parameters": {
+										"sink_table_name": {
+											"value": "@{item().TABLE_NAME}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "sp_write_watermark",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "incremental_copy",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[usp_write_watermark]",
+								"storedProcedureParameters": {
+									"LastModifiedtime": {
+										"value": {
+											"value": "@{activity('new_watermark').output.firstRow.NewWatermarkvalue}",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"TableName": {
+										"value": {
+											"value": "\t@{activity('old_watermark').output.firstRow.TableName}",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_AzureSqlDatabase_OLTP",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "ods_copy",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "sp_write_watermark",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"tableOption": "autoCreate",
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "sink_dataset",
+									"type": "DatasetReference",
+									"parameters": {
+										"sink_table_name": {
+											"value": "@{activity('old_watermark').output.firstRow.TableName}",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ods",
+									"type": "DatasetReference",
+									"parameters": {
+										"ods_table_name": {
+											"value": "@{activity('old_watermark').output.firstRow.TableName}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "integration_copy",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "ods_copy",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"tableOption": "autoCreate",
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "sink_dataset",
+									"type": "DatasetReference",
+									"parameters": {
+										"sink_table_name": "@{activity('old_watermark').output.firstRow.TableName}"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "integration",
+									"type": "DatasetReference",
+									"parameters": {
+										"integration_schema_name": "dbo",
+										"integration_table_name": "@{activity('old_watermark').output.firstRow.TableName}"
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "sp_drop_ods",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_drop_ods_tables]"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_AzureSqlDatabase_ODS",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_drop_integration",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_drop_ods",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_drop_integration_tables]"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_AzureSqlDatabase_Integration",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "sp_generate_olap",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "sp_drop_olap",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_generate_olap_tables]"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_AzureSqlDatabase_Integration",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "iterate_olap",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "sp_generate_olap",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.olap_table_list",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "olap_copy",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"tableOption": "autoCreate",
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "integration",
+									"type": "DatasetReference",
+									"parameters": {
+										"integration_schema_name": {
+											"value": "@{item().SCHEMA_NAME}",
+											"type": "Expression"
+										},
+										"integration_table_name": {
+											"value": "@{item().TABLE_NAME}",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "olap",
+									"type": "DatasetReference",
+									"parameters": {
+										"olap_schema_name": {
+											"value": "@{item().SCHEMA_NAME}",
+											"type": "Expression"
+										},
+										"olap_table_name": {
+											"value": "@{item().TABLE_NAME}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "sp_drop_olap",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "iterate_oltp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_drop_olap_tables]"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_AzureSqlDatabase_OLAP",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"oltp_table_list": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"TABLE_NAME": "orders_table",
+						"WaterMark_Column": "LastEditedWhen",
+						"TableType": "DataTypeforOrdersTable",
+						"StoredProcedureNameForMergeOperation": "usp_upsert_orders_table"
+					},
+					{
+						"TABLE_NAME": "order_lines_table",
+						"WaterMark_Column": "LastEditedWhen",
+						"TableType": "DataTypeforOrderLinesTable",
+						"StoredProcedureNameForMergeOperation": "usp_upsert_order_lines_table"
+					}
+				]
+			},
+			"olap_table_list": {
+				"type": "array",
+				"defaultValue": [
+					{
+						"SCHEMA_NAME": "Fact",
+						"TABLE_NAME": "Orders"
+					},
+					{
+						"SCHEMA_NAME": "Dimension",
+						"TABLE_NAME": "Customers"
+					}
+				]
+			}
+		},
+		"annotations": []
+	}
+}

@@ -1,0 +1,376 @@
+{
+	"name": "bronzeToSilver",
+	"properties": {
+		"folder": {
+			"name": "movie"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "bronze_movie_tmp",
+						"type": "DatasetReference"
+					},
+					"name": "bronze"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "genres",
+						"type": "DatasetReference"
+					},
+					"name": "genres"
+				},
+				{
+					"dataset": {
+						"referenceName": "original_languages",
+						"type": "DatasetReference"
+					},
+					"name": "originalLanguages"
+				},
+				{
+					"dataset": {
+						"referenceName": "bronze_movie_tmp",
+						"type": "DatasetReference"
+					},
+					"name": "updateBronze"
+				},
+				{
+					"dataset": {
+						"referenceName": "silver_movie_tmp",
+						"type": "DatasetReference"
+					},
+					"name": "silver"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filterStatus"
+				},
+				{
+					"name": "parseJson"
+				},
+				{
+					"name": "flattenJson"
+				},
+				{
+					"name": "select1"
+				},
+				{
+					"name": "addForeignKeys"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "genresSelect1"
+				},
+				{
+					"name": "genresParseJson"
+				},
+				{
+					"name": "genresFlattenJson"
+				},
+				{
+					"name": "flattenGenres"
+				},
+				{
+					"name": "genresDistinctRows"
+				},
+				{
+					"name": "filterNull"
+				},
+				{
+					"name": "genresSelect2"
+				},
+				{
+					"name": "sort"
+				},
+				{
+					"name": "addOriginalLanguages"
+				},
+				{
+					"name": "originalLanguagesSelect1"
+				},
+				{
+					"name": "originalLanguagesDistinctRows"
+				},
+				{
+					"name": "originalLanguagesSelect2"
+				},
+				{
+					"name": "distinctRaw"
+				},
+				{
+					"name": "silverClean"
+				},
+				{
+					"name": "filterClean"
+				},
+				{
+					"name": "filterQuarantine"
+				},
+				{
+					"name": "joinLoaded"
+				},
+				{
+					"name": "statusLoaded"
+				},
+				{
+					"name": "selectLoaded"
+				},
+				{
+					"name": "joinQuarantined"
+				},
+				{
+					"name": "statusQuarantined"
+				},
+				{
+					"name": "selectQuarantined"
+				},
+				{
+					"name": "union"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          value as string,",
+				"          datasource as string,",
+				"          ingestdate as date,",
+				"          ingesttime as timestamp,",
+				"          status as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> bronze",
+				"bronze filter(status == \"new\") ~> filterStatus",
+				"select1 parse(nested_json = value ? (Id as integer,",
+				"     Title as string,",
+				"     Overview as string,",
+				"     Tagline as string,",
+				"     Budget as double,",
+				"     Revenue as double,",
+				"     ImdbUrl as string,",
+				"     TmdbUrl as string,",
+				"     PosterUrl as string,",
+				"     BackdropUrl as string,",
+				"     OriginalLanguage as string,",
+				"     ReleaseDate as date,",
+				"     RunTime as integer,",
+				"     Price as double,",
+				"     CreatedDate as date,",
+				"     genres as (id as integer,",
+				"     name as string)[])[],",
+				"     format: 'json',",
+				"     documentForm: 'documentPerLine') ~> parseJson",
+				"parseJson foldDown(unroll(nested_json),",
+				"     mapColumn(",
+				"          value,",
+				"          Id = nested_json.Id,",
+				"          Title = nested_json.Title,",
+				"          Overview = nested_json.Overview,",
+				"          Tagline = nested_json.Tagline,",
+				"          Budget = nested_json.Budget,",
+				"          Revenue = nested_json.Revenue,",
+				"          ImdbUrl = nested_json.ImdbUrl,",
+				"          TmdbUrl = nested_json.TmdbUrl,",
+				"          PosterUrl = nested_json.PosterUrl,",
+				"          BackdropUrl = nested_json.BackdropUrl,",
+				"          OriginalLanguage = nested_json.OriginalLanguage,",
+				"          ReleaseDate = nested_json.ReleaseDate,",
+				"          RunTime = nested_json.RunTime,",
+				"          Price = nested_json.Price,",
+				"          CreatedDate = nested_json.CreatedDate,",
+				"          genres = nested_json.genres",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattenJson",
+				"filterStatus select(mapColumn(",
+				"          value",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"flattenJson derive(genre_id = toString(genres.id),",
+				"          original_language_id = 1) ~> addForeignKeys",
+				"addForeignKeys select(mapColumn(",
+				"          value,",
+				"          movie_id = Id,",
+				"          title = Title,",
+				"          overview = Overview,",
+				"          tagline = Tagline,",
+				"          budget = Budget,",
+				"          revenue = Revenue,",
+				"          imdb_url = ImdbUrl,",
+				"          tmdb_url = TmdbUrl,",
+				"          poster_url = PosterUrl,",
+				"          backdrop_url = BackdropUrl,",
+				"          original_language_id,",
+				"          release_date = ReleaseDate,",
+				"          runtime = RunTime,",
+				"          price = Price,",
+				"          created_date = CreatedDate,",
+				"          genre_id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"bronze select(mapColumn(",
+				"          value",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> genresSelect1",
+				"genresSelect1 parse(nested_json = value ? (Id as integer,",
+				"     Title as string,",
+				"     Overview as string,",
+				"     Tagline as string,",
+				"     Budget as integer,",
+				"     Revenue as integer,",
+				"     ImdbUrl as string,",
+				"     TmdbUrl as string,",
+				"     PosterUrl as string,",
+				"     BackdropUrl as string,",
+				"     OriginalLanguage as string,",
+				"     ReleaseDate as string,",
+				"     RunTime as integer,",
+				"     Price as integer,",
+				"     CreatedDate as string,",
+				"     genres as (id as integer,",
+				"     name as string)[])[],",
+				"     format: 'json',",
+				"     documentForm: 'documentPerLine') ~> genresParseJson",
+				"genresParseJson foldDown(unroll(nested_json),",
+				"     mapColumn(",
+				"          genres = nested_json.genres",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> genresFlattenJson",
+				"genresFlattenJson foldDown(unroll(genres),",
+				"     mapColumn(",
+				"          id = genres.id,",
+				"          name = genres.name",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattenGenres",
+				"flattenGenres aggregate(groupBy(mycols = sha2(256,columns())),",
+				"     each(match(true()), $$ = first($$))) ~> genresDistinctRows",
+				"genresDistinctRows filter(name != \"\") ~> filterNull",
+				"filterNull select(mapColumn(",
+				"          id,",
+				"          name",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> genresSelect2",
+				"genresSelect2 sort(asc(id, true)) ~> sort",
+				"bronze derive(id = 1,",
+				"          language = \"English\") ~> addOriginalLanguages",
+				"addOriginalLanguages select(mapColumn(",
+				"          id,",
+				"          language",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> originalLanguagesSelect1",
+				"originalLanguagesSelect1 aggregate(groupBy(mycols = sha2(256,columns())),",
+				"     each(match(true()), $$ = first($$))) ~> originalLanguagesDistinctRows",
+				"originalLanguagesDistinctRows select(mapColumn(",
+				"          id,",
+				"          language",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> originalLanguagesSelect2",
+				"select2 aggregate(groupBy(value),",
+				"     each(match(name!=\"value\"), $$ = first($$))) ~> distinctRaw",
+				"distinctRaw filter(runtime >= 0 && budget >= 1000000) ~> silverClean",
+				"distinctRaw filter(runtime < 0 || budget < 1000000) ~> filterClean",
+				"distinctRaw filter(runtime >= 0 && budget >= 1000000) ~> filterQuarantine",
+				"filterQuarantine, bronze join(distinctRaw@value == bronze@value,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinLoaded",
+				"joinLoaded derive(status = \"loaded\") ~> statusLoaded",
+				"statusLoaded select(mapColumn(",
+				"          value = bronze@value,",
+				"          datasource,",
+				"          ingestdate,",
+				"          ingesttime,",
+				"          status",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectLoaded",
+				"filterClean, bronze join(distinctRaw@value == bronze@value,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinQuarantined",
+				"joinQuarantined derive(status = \"quarantined\") ~> statusQuarantined",
+				"statusQuarantined select(mapColumn(",
+				"          value = bronze@value,",
+				"          datasource,",
+				"          ingestdate,",
+				"          ingesttime,",
+				"          status",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectQuarantined",
+				"selectLoaded, selectQuarantined union(byName: true)~> union",
+				"sort sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> genres",
+				"originalLanguagesSelect2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> originalLanguages",
+				"union sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> updateBronze",
+				"silverClean sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          value as string,",
+				"          movie_id as integer,",
+				"          title as string,",
+				"          overview as string,",
+				"          tagline as string,",
+				"          budget as double,",
+				"          revenue as double,",
+				"          imdb_url as string,",
+				"          tmdb_url as string,",
+				"          poster_url as string,",
+				"          backdrop_url as string,",
+				"          original_language_id as integer,",
+				"          release_date as date,",
+				"          runtime as integer,",
+				"          price as double,",
+				"          created_date as date,",
+				"          genre_id as string",
+				"     ),",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> silver"
+			]
+		}
+	}
+}

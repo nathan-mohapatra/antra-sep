@@ -1,0 +1,22 @@
+{
+	"name": "raw_movie_src",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_AzureDataLakeStorage",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "movie"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "movie_*.json",
+				"fileSystem": "raw-movie"
+			}
+		},
+		"schema": {}
+	}
+}

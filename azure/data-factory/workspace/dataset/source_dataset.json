@@ -1,0 +1,15 @@
+{
+	"name": "source_dataset",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_SqlServer_OLTP",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "wide_world_importers"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": []
+	}
+}

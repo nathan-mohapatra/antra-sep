@@ -1,0 +1,92 @@
+{
+	"name": "silver_movie_tmp",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_AzureDataLakeStorage",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "movie"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "tmp",
+				"fileSystem": "silver-movie"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "value",
+				"type": "UTF8"
+			},
+			{
+				"name": "movie_id",
+				"type": "INT32"
+			},
+			{
+				"name": "title",
+				"type": "UTF8"
+			},
+			{
+				"name": "overview",
+				"type": "UTF8"
+			},
+			{
+				"name": "tagline",
+				"type": "UTF8"
+			},
+			{
+				"name": "budget",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "revenue",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "imdb_url",
+				"type": "UTF8"
+			},
+			{
+				"name": "tmdb_url",
+				"type": "UTF8"
+			},
+			{
+				"name": "poster_url",
+				"type": "UTF8"
+			},
+			{
+				"name": "backdrop_url",
+				"type": "UTF8"
+			},
+			{
+				"name": "original_language_id",
+				"type": "INT32"
+			},
+			{
+				"name": "release_date",
+				"type": "DATE"
+			},
+			{
+				"name": "runtime",
+				"type": "INT32"
+			},
+			{
+				"name": "price",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "created_date",
+				"type": "DATE"
+			},
+			{
+				"name": "genre_id",
+				"type": "UTF8"
+			}
+		]
+	}
+}

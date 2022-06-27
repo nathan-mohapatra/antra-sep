@@ -1,0 +1,33 @@
+{
+	"name": "integration",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_AzureSqlDatabase_Integration",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"integration_schema_name": {
+				"type": "string"
+			},
+			"integration_table_name": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "wide_world_importers"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().integration_schema_name",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().integration_table_name",
+				"type": "Expression"
+			}
+		}
+	}
+}

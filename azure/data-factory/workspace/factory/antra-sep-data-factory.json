@@ -1,0 +1,9 @@
+{
+	"name": "antra-sep-data-factory",
+	"location": "centralus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "ae27dc0d-788f-4f12-881c-486645b77f76",
+		"tenantId": "6c458fe6-485e-45ef-a34d-e8ccf6311cf3"
+	}
+}

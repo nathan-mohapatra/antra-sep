@@ -1,0 +1,44 @@
+{
+	"name": "movie",
+	"properties": {
+		"activities": [
+			{
+				"name": "raw_to_bronze_to_silver",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "raw_to_bronze_to_silver",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "quarantined_bronze_to_silver",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "raw_to_bronze_to_silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "quarantined_bronze_to_silver",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"folder": {
+			"name": "movie"
+		},
+		"annotations": []
+	}
+}
